@@ -70,7 +70,7 @@ int ikv_set_sock_no_block(int s)
 {
     int flags;
 
-    if ((flags = fcntl(s, F_GETFL, NULL)) < 0) {
+   if ((flags = fcntl(s, F_GETFL, NULL)) < 0) {
         return -1;
     }
 

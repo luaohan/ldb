@@ -5,6 +5,7 @@
 #define _LDB_CLIENT_H_
 
 #include <vector>
+#include "ldb_command.h"
 
 class Client {
 
@@ -17,8 +18,10 @@ class Client {
         int fd_;                    //客户端的fd
 
         int argc_;                  //客户端发来的命令的参数的个数
-        std::vector<char *> argv_;  //客户端发来的命令的参数
+        char *argv_[10];  //客户端发来的命令的参数
         
+        struct Command *cmd;
+
         enum { BUFFER_SIZE = 2048 };
         char recv_[BUFFER_SIZE];    //接收缓冲区
         char replay_[BUFFER_SIZE];  //回复缓冲区

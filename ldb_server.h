@@ -7,11 +7,13 @@
 #include <iostream>
 #include <vector>
 #include <leveldb/db.h>
+#include <leveldb/slice.h>
 
 #include "ldb_command.h"
-#include "ldc_client.h"
+#include "ldb_client.h"
 
-//using namespace std;
+class Command;
+class Client;
 
 class Server {
 
@@ -22,15 +24,20 @@ class Server {
         //level::DB *get_db() const { return db_; }
         
         void AddCommand(Command &com);
-        void AddClient(Client &cli);
-        void DeleteClient(Client &cli);
+        Command *FindCommand(char *name);
+
+        void AddClient(Client *cli);
+        void DeleteClient(int fd);
+        Client *FindClinet(int fd);
         
         void Listen();
         int Accept(char *client_ip, int *client_port); 
 
-        void Insert(const Slice& key, const Slice& value);
-        void Get(const Slice& key, std::string* value);
-        void Delete(const Slice& key);
+        void Insert(const leveldb::Slice& key, const leveldb::Slice& value);
+        void Get(const leveldb::Slice& key, std::string* value);
+        void Delete(const leveldb::Slice& key);
+
+        int fd() const { return fd_; }
 
     private:
         int fd_ ;
@@ -39,13 +46,13 @@ class Server {
         
         bool daemonize_;
 
-        leveldb::Option options_;
+        leveldb::Options options_;
         leveldb::WriteOptions write_options_;
         leveldb::ReadOptions read_options_;
-        level::DB *db_;
+        leveldb::DB *db_;
         
         std::vector<Command> commands_;
-        std::vector<Client> clients_;
+        std::vector<Client *> clients_;
 
         char *configure_;
         char *logfile_;

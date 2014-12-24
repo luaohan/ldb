@@ -7,7 +7,10 @@
 #include "ldb_server.h"
 #include "ldb_client.h"
 
-typedef void ldb_command_proc(Server &server, Client &c);
+class Server;
+class Client;
+
+typedef void ldb_command_proc(Server *server, Client *c);
 
 struct Command 
 {
@@ -20,6 +23,14 @@ struct Command
                    // 注意命令本身也是一个参数
 
     char *sflags;   // 字符串表示的 FLAG
+#if 0
+    Command(char *i_name, ldb_command_proc *i_proc, int i_argc, char *i_sflags) {
+        name = i_name;
+        proc = i_proc;
+        argc = i_argc;
+        sflags = i_sflags;
+    }
+#endif
 };
 
 
