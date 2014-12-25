@@ -42,6 +42,7 @@ class Socket {
         void setNoNagle();
         
     private:
+        
         int fd_;
         char ip_[INET_ADDRSTRLEN];
         int port_;
