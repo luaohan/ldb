@@ -5,12 +5,12 @@
 #include <sys/epoll.h>
 #include <errno.h>
 
-#include "ldb_server.h"
-#include "ldb_command.h"
-#include "ldb_client.h"
-#include "ldb_string_type.h"
-#include "ikv_str.h"
-#include "ikv_sock.h"
+#include "server.h"
+#include "command.h"
+#include "client.h"
+#include "string_type.h"
+#include "str.h"
+#include "sock.h"
 
 #define LDB_EVENT_MAX_COUNTS 1024
 #define LDB_SPACE "                                          "
