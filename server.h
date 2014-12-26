@@ -8,9 +8,12 @@
 #include <vector>
 #include <leveldb/db.h>
 #include <leveldb/slice.h>
+#include <string>
 
 #include "command.h"
 #include "client.h"
+#include "acceptor.h"
+#include "e_epoll.h"
 
 class Command;
 class Client;
@@ -21,30 +24,33 @@ class Server {
         Server(int server_port);
         ~Server();
 
-        //level::DB *get_db() const { return db_; }
-        
-        void AddCommand(Command &com);
         Command *FindCommand(char *name);
+
+        void CreateComTable();
 
         void AddClient(Client *cli);
         void DeleteClient(int fd);
         Client *FindClinet(int fd);
-        
+#if 0 
         void Listen();
         int Accept(char *client_ip, int *client_port); 
-
+#endif
         void Insert(const leveldb::Slice& key, const leveldb::Slice& value);
         void Get(const leveldb::Slice& key, std::string* value);
         void Delete(const leveldb::Slice& key);
 
-        int fd() const { return fd_; }
+        //int fd() const { return fd_; }
 
     private:
-        int fd_ ;
+        void AddCommand(Command &com);
 
-        int server_port_;
+    private:
+        //int fd_ ;
+        //int server_port_;
         
-        bool daemonize_;
+        Acceptor socket_;
+
+        Epoll event_;
 
         leveldb::Options options_;
         leveldb::WriteOptions write_options_;
@@ -56,6 +62,8 @@ class Server {
 
         char *configure_;
         char *logfile_;
+        
+        bool daemonize_;
 
 };
 

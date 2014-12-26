@@ -6,19 +6,19 @@
 
 #include "str.h"
 
-//extern long long IKV_TOTAL_MALLOC;
+//extern long long ldb_TOTAL_MALLOC;
 
-ikv_str_t *ikv_create_str(const char *str, int str_len)
+ldb_str_t *ldb_create_str(const char *str, int str_len)
 {
-    int total = sizeof(ikv_str_t) + str_len + 1;
+    int total = sizeof(ldb_str_t) + str_len + 1;
 
-    ikv_str_t *p = (ikv_str_t *)malloc( total );
+    ldb_str_t *p = (ldb_str_t *)malloc( total );
     if (p == NULL) {
         return NULL;
     }
     
-    //IKV_TOTAL_MALLOC += total;
-    fprintf(stderr, "sizeof(ikv_str_t) + str_len + 1 : %d\n", total);
+    //ldb_TOTAL_MALLOC += total;
+    fprintf(stderr, "sizeof(ldb_str_t) + str_len + 1 : %d\n", total);
 
     p->len = str_len;
     p->free = 0;
@@ -31,50 +31,50 @@ ikv_str_t *ikv_create_str(const char *str, int str_len)
     return p;
 }
 
-void ikv_free_str_t(ikv_str_t *str)
+void ldb_free_str_t(ldb_str_t *str)
 {
     assert(str != NULL);
 #if 0
-    if( IKV_TOTAL_MALLOC > 0){
-        IKV_TOTAL_MALLOC -= (sizeof(ikv_str_t) + str->len + str->free + 1);
+    if( ldb_TOTAL_MALLOC > 0){
+        ldb_TOTAL_MALLOC -= (sizeof(ldb_str_t) + str->len + str->free + 1);
     }
 #endif
     free(str);
 }
 
-void ikv_free_str(char *str)
+void ldb_free_str(char *str)
 {
     assert(str != NULL);
 #if 0 
-    if( IKV_TOTAL_MALLOC > 0){
-        IKV_TOTAL_MALLOC -= (strlen(str) + 1);
+    if( ldb_TOTAL_MALLOC > 0){
+        ldb_TOTAL_MALLOC -= (strlen(str) + 1);
     }
 #endif
     free(str);
 }
 
-int ikv_str_len( const ikv_str_t *str )
+int ldb_str_len( const ldb_str_t *str )
 {
     assert(str != NULL);
 
     return str->len;
 }
 
-int ikv_str_avail(const ikv_str_t *str)
+int ldb_str_avail(const ldb_str_t *str)
 {
     assert(str != NULL);
 
     return str->free;
 }
 
-void ikv_str_clear(ikv_str_t *str)
+void ldb_str_clear(ldb_str_t *str)
 {
     str->free += str->len;
     str->len = 0;
     str->buf[0] = '\0';
 }
 
-int ikv_str_cat( ikv_str_t *istr, const char *str)
+int ldb_str_cat( ldb_str_t *istr, const char *str)
 {
     assert(istr != NULL && str != NULL);
     
@@ -86,16 +86,16 @@ int ikv_str_cat( ikv_str_t *istr, const char *str)
 
         if (istr->len < ONE_M_) {
 
-            ikv_str_t *p = (ikv_str_t *)realloc(istr, sizeof(ikv_str_t) + 2 * istr->len + 1);
+            ldb_str_t *p = (ldb_str_t *)realloc(istr, sizeof(ldb_str_t) + 2 * istr->len + 1);
 
             if (p == NULL) {
                 return -1;
             }
 
-            //IKV_TOTAL_MALLOC += (2 * istr->len - len - istr->free);
+            //ldb_TOTAL_MALLOC += (2 * istr->len - len - istr->free);
 
             if (p != istr) {
-                ikv_free_str_t(istr);
+                ldb_free_str_t(istr);
                 istr = p;
             }
 
@@ -103,15 +103,15 @@ int ikv_str_cat( ikv_str_t *istr, const char *str)
 
         } else if (istr->len >= ONE_M_) {
 
-            ikv_str_t *p = (ikv_str_t *)realloc(istr, sizeof(ikv_str_t) + ONE_M_ + istr->len + 1);
+            ldb_str_t *p = (ldb_str_t *)realloc(istr, sizeof(ldb_str_t) + ONE_M_ + istr->len + 1);
             if (p == NULL) {
                 return -1;
             }
 
-            //IKV_TOTAL_MALLOC += (ONE_M_ + istr->len  - len - istr->free);
+            //ldb_TOTAL_MALLOC += (ONE_M_ + istr->len  - len - istr->free);
 
             if (p != istr) {
-                ikv_free_str_t(istr);
+                ldb_free_str_t(istr);
                 istr = p;
             }
             
@@ -129,14 +129,14 @@ int ikv_str_cat( ikv_str_t *istr, const char *str)
     return 0;
 }
 
-int ikv_str_cat_str( ikv_str_t *str1, ikv_str_t *str2)
+int ldb_str_cat_str( ldb_str_t *str1, ldb_str_t *str2)
 {
     assert (str1 != NULL && str2 != NULL);
 
-    return ikv_str_cat(str1, str2->buf);
+    return ldb_str_cat(str1, str2->buf);
 }
 
-char *ikv_str_trim( char *istr, const char *str)
+char *ldb_str_trim( char *istr, const char *str)
 {
     assert(istr != NULL && str != NULL);
 
@@ -159,7 +159,7 @@ char *ikv_str_trim( char *istr, const char *str)
     char *new_str = (char *)malloc(len + 1);
     memcpy(new_str, istr + start_p, len);
     new_str[len] = '\0';
-    IKV_TOTAL_MALLOC += (len + 1);
+    ldb_TOTAL_MALLOC += (len + 1);
     return new_str;
 #endif 
     memmove(istr, istr + start_p, len);
@@ -168,7 +168,7 @@ char *ikv_str_trim( char *istr, const char *str)
     return istr;
 }
 
-int ikv_str_cmp( const ikv_str_t *str1, const ikv_str_t *str2)
+int ldb_str_cmp( const ldb_str_t *str1, const ldb_str_t *str2)
 {
     assert(str1 != NULL && str2 != NULL);
     

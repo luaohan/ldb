@@ -9,33 +9,31 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-class Acceptor {
+class Socket {
 
     public:
-        Acceptor(bool local);
-        ~Acceptor();
+        Socket();
+        ~Socket();
 
         //ok: return 0
         //error: return -1
-        int Listen(const char *ip, int port, int backlog);
+        int Connect(const char *ip, int port);
 
-        Acceptor *Accept();
-        
         int getBacklog();
         int getFd() const;
         int getPort();
-        char *getIp(); //error: return NULL
+        char *getIp(); 
 
         bool isNoblocked();
     
-        //if uses these, call before Listen() 
+        //if uses these, call before Connect()
         int setNoblock();
         void setReuseAddr(); 
         void setLinger();
         void setRcvBuf(int size);
         void setSndBuf(int size);
         void setNoNagle();
-   
+
         //just like read() and write()
         //ok: return the size of read
         //error: return -1
@@ -52,8 +50,8 @@ class Acceptor {
 
     private:
         //No copying allowed
-        Acceptor(const Acceptor &);
-        void operator=(const Acceptor &);
+        Socket(const Socket &);
+        void operator=(const Socket &);
 };
 
 

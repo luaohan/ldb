@@ -2,7 +2,7 @@
 // WangPeng (1245268612@qq.com)
 //
 #include <stdio.h>
-#include "../socket.h"
+#include "../client/socket.h"
 
 int main()
 {

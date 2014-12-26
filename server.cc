@@ -9,11 +9,11 @@
 #include <stdlib.h>
 
 #include "server.h"
-#include "sock.h"
+//#include "sock.h"
+#include "string_type.h"
 
-Server::Server(int server_port)
-:fd_(-1), server_port_(server_port), daemonize_(false),
-    configure_(NULL), logfile_(NULL)
+Server::Server(int server_port): fd_(-1), server_port_(server_port), 
+    daemonize_(false), configure_(NULL), logfile_(NULL)
 {
     options_.create_if_missing = true;
 
@@ -92,10 +92,10 @@ Command *Server::FindCommand(char *name)
     return NULL;
 }
 
-
+#if 0
 void Server::Listen()
 {
-    int fd = ikv_create_tcp_server("0.0.0.0", server_port_);
+    int fd = ldb_create_tcp_server("0.0.0.0", server_port_);
     if (fd == -1) {
         fprintf(stderr, "create tcp server:", strerror(errno));
         exit(0);
@@ -106,5 +106,30 @@ void Server::Listen()
 
 int Server::Accept(char *client_ip, int *client_port)
 {
-    return ikv_accept(fd_, client_ip, client_port);
+    return ldb_accept(fd_, client_ip, client_port);
+}
+#endif
+
+void Server::CreateComTable()
+{
+    Command ldb_commands_table[] = {
+        {"set", ldb_set_command, 3, "w"}/*,
+        {"get", ldb_get_command, 2, "r"},
+        {"update", ldb_update_command, 3, "w"},
+        {"del", ldb_del_command, 2, "w"},
+        {"lookall", ldb_lookall_command, 1, "r"},
+        {"clear", ldb_clear_command, 1, "w"},
+        {"select", ldb_select_command, 2, "w"}*/
+    };  
+    
+    AddCommand(ldb_commands_table[0]);
+#if 0
+    server.AddCommand(ldb_commands_table[1]);
+    server.AddCommand(ldb_commands_table[2]);
+    server.AddCommand(ldb_commands_table[3]);
+    server.AddCommand(ldb_commands_table[4]);
+    server.AddCommand(ldb_commands_table[5]);
+    server.AddCommand(ldb_commands_table[6]);
+#endif
+
 }

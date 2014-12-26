@@ -1,4 +1,4 @@
-// ldb_client.h (2014-12-23)
+// ldb_client.h (2015-12-23)
 // WangPeng (1245268612@qq.com)
 
 #ifndef _LDB_CLIENT_H_

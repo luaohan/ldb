@@ -15,7 +15,7 @@
 
 #include "sock.h"
 
-void ikv_set_sock_default_opt(int s)
+void ldb_set_sock_default_opt(int s)
 {
     //设置SO_REUSEADDR选项(服务器快速重起)
     int on = 1;                          
@@ -47,7 +47,7 @@ void ikv_set_sock_default_opt(int s)
     return;
 }
 
-void ikv_set_sock_no_delay(int s)
+void ldb_set_sock_no_delay(int s)
 {
     int opt;
     socklen_t optlen;
@@ -66,7 +66,7 @@ void ikv_set_sock_no_delay(int s)
     return;
 }
 
-int ikv_set_sock_no_block(int s)
+int ldb_set_sock_no_block(int s)
 {
     int flags;
 
@@ -81,7 +81,7 @@ int ikv_set_sock_no_block(int s)
     return 0;
 }
 
-int ikv_create_tcp_server(const char *ip, int port)
+int ldb_create_tcp_server(const char *ip, int port)
 {
     assert(ip != NULL);
     
@@ -91,7 +91,7 @@ int ikv_create_tcp_server(const char *ip, int port)
         return -1;
     }
 
-    ikv_set_sock_default_opt(s);
+    ldb_set_sock_default_opt(s);
 
     addr.sin_family = AF_INET;
     if (strcmp(ip, "0.0.0.0") == 0) {
@@ -108,7 +108,7 @@ int ikv_create_tcp_server(const char *ip, int port)
         return -1;
     }
 
-    if (listen(s, IKV_MAX_LISTEN_QUEUE ) == -1 ) {
+    if (listen(s, LDB_MAX_LISTEN_QUEUE ) == -1 ) {
         close(s);
         s = -1;
         return -1;
@@ -117,7 +117,7 @@ int ikv_create_tcp_server(const char *ip, int port)
     return s;
 }
 
-int ikv_create_tcp_client(const char *ip, int port)
+int ldb_create_tcp_client(const char *ip, int port)
 {
     struct sockaddr_in addr;
     int result;
@@ -153,7 +153,7 @@ int ikv_create_tcp_client(const char *ip, int port)
     return fd;
 }
 
-int ikv_accept(int listen_fd, char *ip, int *port)
+int ldb_accept(int listen_fd, char *ip, int *port)
 {
     int fd = -1;
     struct sockaddr_in remote;
@@ -180,7 +180,7 @@ ReAccept:
         return -1;
     }
 
-    ikv_set_sock_no_delay(fd);
+    ldb_set_sock_no_delay(fd);
 
     if ( port != NULL ) {
         *port = ntohs(remote.sin_port);
