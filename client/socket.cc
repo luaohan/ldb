@@ -152,6 +152,7 @@ int Socket::readData(char *buffer, int buffer_size)
 
             ret += len;
             buffer += len;
+            want -= len;
         }       
         if( !is_noblocked_ ){
             break;
@@ -182,6 +183,7 @@ int Socket::writeData(char *buffer, int buffer_size)
             }
             ret += len;
             buffer += len;
+            want -= len;
         }
         if(!is_noblocked_){
             break;

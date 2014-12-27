@@ -16,11 +16,13 @@ int ClientImpl::Set(std::string &key, std::string &val)
     /*set key val*/
     int len = strlen("set") + 1 + key.size() + 1 + val.size();
 
-    char buffer[len];
+    char buffer[len+1];
     memcpy(buffer, "set ", 3 + 1);
     memcpy(buffer + 4, s_key, key.size());
     memcpy(buffer + 4 + key.size(), " ", 1);
     memcpy(buffer + 4 + key.size() + 1, s_val, val.size());
+
+    buffer[len] = '\0';
 
     socket_.writeData(buffer, len);
 

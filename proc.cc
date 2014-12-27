@@ -1,6 +1,6 @@
 // proc.cc (2014-12-25)
 // WangPeng (1245268612@qq.com)
-//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,36 +8,16 @@
 
 #include "proc.h"
 #include "str.h" 
-#include "string_type.h"
-
-extern Server server;
-
-int ldb_write(int fd, void *buf, int len)   
-{
-    int write_len;
-
-write_again:
-    write_len = write(fd, buf, len);
-    if (write_len < 0)  
-    {   
-        if (write_len == EINTR) {
-            goto write_again;
-        }   
-
-        return write_len;
-    }   
-
-    return write_len;
-}
 
 int ldb_tell_client( Client *client )
 {
-    return ldb_write(client->fd_, client->replay_, strlen(client->replay_));
+    return client->link_->writeData(client->replay_, strlen(client->replay_));
 }
 
-void process_client_info(Client *client) 
+void process_client_info(Server &server, Client *client) 
 {
-    fprintf(stderr, "client_fd:%d, data:|%s|\n", client->fd_, client->recv_);
+    fprintf(stderr, "client_fd:%d, data:|%s|\n", client->link_->getFd(), 
+            client->recv_);
 
     str2lower(client->recv_);
     strs2tokens(client->recv_, LDB_SPACE, client->argv_, &client->argc_);
@@ -49,13 +29,10 @@ void process_client_info(Client *client)
 
         tell_len = ldb_tell_client(client);
         if (tell_len < 0) {
-            memcpy(client->replay_, 0, 2048);
             fprintf(stderr, "ldb_tell_client error:%s\n", strerror(errno));
             return ;
         }
 
-        memset(client->recv_, 0, 2048);
-        memset(client->replay_, 0, 2048);
         return ;
     }
     
@@ -67,7 +44,60 @@ void process_client_info(Client *client)
         return ;
     }
    
-    memset(client->recv_, 0, 2048);
-    memset(client->replay_, 0, 2048);
+    return ;
+}
+
+void ldb_process_events(Server &server)
+{
+    int n = server.event_.waitReadEvent(server.fired_fd);
+    if ( n < 0) {
+        // log()
+        return ;
+    }
+
+    for (int i = 0; i < n; i++) 
+    {
+        if ( server.fired_fd[i] == server.socket_.getFd()) {
+            Acceptor *link = server.socket_.Accept();
+            if (link == NULL) {
+                //log()
+                continue;
+            }
+
+            link->setNoblock();
+
+            server.event_.addReadEvent(link->getFd());
+
+            Client *cli = new Client(link);
+            server.AddClient(cli);
+
+            fprintf(stderr, "create a client \n");
+            continue;
+        }
+
+        Client *cli = server.FindClient(server.fired_fd[i]);
+
+        int ret = cli->link_->readData(cli->recv_, 2048);
+        if (ret < 0) {
+            //log_error();
+            server.event_.delReadEvent(cli->link_->getFd());
+            server.DeleteClient(cli->link_->getFd());
+            delete cli->link_;
+            delete cli;
+            continue;
+        }
+
+        if (ret == 0) { //a client exit
+            server.event_.delReadEvent(cli->link_->getFd());
+            server.DeleteClient(cli->link_->getFd());
+            delete cli->link_;
+            delete cli;
+            fprintf(stderr, "a client exit.\n");
+            continue;
+        }
+
+        process_client_info(server, cli);
+    }
+
     return ;
 }

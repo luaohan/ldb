@@ -9,10 +9,21 @@
 int main()
 {
     ClientImpl cli;
+    //cli.socket_.setNoblock();
+
+    cli.socket_.setNoNagle();
+
     cli.socket_.Connect("127.0.0.1", 8899);
     
     std::string key = "key";
     std::string val = "val";
     
-    cli.Set(key, val);
+    for (int i = 0; i < 100000; i++) {
+        cli.Set(key, val);
+        printf("%d\n", i);
+    }
+    
+    //for (long int i = 0; i < 1000000000; i++) {}
+
+    return 0;
 }

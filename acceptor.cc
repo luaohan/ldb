@@ -1,4 +1,4 @@
-// socket.cc (2014-12-24)
+// acceptor.cc (2014-12-24)
 // WangPeng (1245268612@qq.com)
 
 #include <string.h>
@@ -21,6 +21,8 @@ Acceptor::Acceptor(bool local):
 Acceptor::~Acceptor()
 {
     if ( fd_ > 0 ) close(fd_);
+
+    fd_ = -1;
 }
 
 int Acceptor::getFd() const
@@ -100,6 +102,14 @@ int Acceptor::Listen(const char *ip, int port, int backlog)
     port_ = port;
 
     return 0;
+}
+
+
+void Acceptor::Close()
+{
+    if (fd_ > 0) close(fd_);
+    
+    fd_ = -1;
 }
 
 Acceptor *Acceptor::Accept()
@@ -203,6 +213,7 @@ int Acceptor::readData(char *buffer, int buffer_size)
 
             ret += len;
             buffer += len;
+            want -= len;
         }
         if( !is_noblocked_ ){
             break;
@@ -233,6 +244,7 @@ int Acceptor::writeData(char *buffer, int buffer_size)
             }
             ret += len;
             buffer += len;
+            want -= len;
         }
         if(!is_noblocked_){
             break;

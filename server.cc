@@ -9,11 +9,9 @@
 #include <stdlib.h>
 
 #include "server.h"
-//#include "sock.h"
 #include "string_type.h"
 
-Server::Server(int server_port): fd_(-1), server_port_(server_port), 
-    daemonize_(false), configure_(NULL), logfile_(NULL)
+Server::Server(): daemonize_(false), configure_(NULL), logfile_(NULL)
 {
     options_.create_if_missing = true;
 
@@ -26,8 +24,6 @@ Server::~Server()
 {
     configure_ = NULL;
     logfile_ = NULL;
-    close(fd_);
-    fd_ = -1;
 }
 
 void Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
@@ -60,23 +56,22 @@ void Server::DeleteClient(int fd)
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->fd_ == fd) {
+        if ((*i)->link_->getFd() == fd) {
             clients_.erase(i);
             break;
         }
     }
 }
 
-Client *Server::FindClinet(int fd)
+Client *Server::FindClient(int fd)
 {
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->fd_ == fd) {
+        if ((*i)->link_->getFd() == fd) {
             return (*i);
         }
     }
-    
 }
 
 Command *Server::FindCommand(char *name)
@@ -91,24 +86,6 @@ Command *Server::FindCommand(char *name)
 
     return NULL;
 }
-
-#if 0
-void Server::Listen()
-{
-    int fd = ldb_create_tcp_server("0.0.0.0", server_port_);
-    if (fd == -1) {
-        fprintf(stderr, "create tcp server:", strerror(errno));
-        exit(0);
-    }
-
-    fd_ = fd;
-}
-
-int Server::Accept(char *client_ip, int *client_port)
-{
-    return ldb_accept(fd_, client_ip, client_port);
-}
-#endif
 
 void Server::CreateComTable()
 {
@@ -132,4 +109,19 @@ void Server::CreateComTable()
     server.AddCommand(ldb_commands_table[6]);
 #endif
 
+}
+
+void Server::Run()
+{
+    CreateComTable();                                          
+
+    socket_.setNoblock();
+    socket_.setNoNagle();
+
+    int backlog = 512;
+    socket_.Listen("0.0.0.0", 8899, backlog);
+
+    event_.addReadEvent(socket_.getFd());
+
+    //if ( daemonize_ ) ldb_daemon();
 }

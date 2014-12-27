@@ -21,37 +21,26 @@ class Client;
 class Server {
 
     public:
-        Server(int server_port);
+        Server();
         ~Server();
 
         Command *FindCommand(char *name);
 
-        void CreateComTable();
-
         void AddClient(Client *cli);
         void DeleteClient(int fd);
-        Client *FindClinet(int fd);
-#if 0 
-        void Listen();
-        int Accept(char *client_ip, int *client_port); 
-#endif
+        Client *FindClient(int fd);
+
         void Insert(const leveldb::Slice& key, const leveldb::Slice& value);
         void Get(const leveldb::Slice& key, std::string* value);
         void Delete(const leveldb::Slice& key);
 
-        //int fd() const { return fd_; }
+        void Run();
 
     private:
         void AddCommand(Command &com);
+        void CreateComTable();
 
     private:
-        //int fd_ ;
-        //int server_port_;
-        
-        Acceptor socket_;
-
-        Epoll event_;
-
         leveldb::Options options_;
         leveldb::WriteOptions write_options_;
         leveldb::ReadOptions read_options_;
@@ -64,6 +53,12 @@ class Server {
         char *logfile_;
         
         bool daemonize_;
+
+    public:
+        Epoll event_;
+        int fired_fd[1024];
+
+        Acceptor socket_;
 
 };
 

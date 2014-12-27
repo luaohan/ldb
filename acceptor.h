@@ -1,4 +1,4 @@
-// socket.h (2014-12-24)
+// acceptor.h (2014-12-24)
 // WangPeng (1245268612@qq.com)
 
 #ifndef _SOCKET_H_
@@ -12,14 +12,17 @@
 class Acceptor {
 
     public:
-        Acceptor(bool local);
+        Acceptor(bool local = true);
         ~Acceptor();
 
         //ok: return 0
         //error: return -1
         int Listen(const char *ip, int port, int backlog);
 
+        //error: return NULL
         Acceptor *Accept();
+
+        void Close();
         
         int getBacklog();
         int getFd() const;

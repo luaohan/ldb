@@ -12,27 +12,19 @@ class Epoll {
         Epoll();
         ~Epoll();
 
-        int addEvent(int fd);
-        int delEvent(int fd);
+        int addReadEvent(int fd);
+        int delReadEvent(int fd);
 
-        //ok: return 0
+        //ok: return the num of the events 
         //error: return -1
-        int waitEvent(int time_out = -1);
-
-        int *getFdInRead() ;
-        int *getFdInWrite() ;
+        int waitReadEvent(int *fired_fd, int time_out = -1);
 
     private:
         int epfd_;
 
         static const int max_connections_ = 1024;
         struct epoll_event *events_;
-
-        int fd_in_read_[max_connections_];
-        int fd_in_write_[max_connections_];
-
 };
-
 
 
 #endif
