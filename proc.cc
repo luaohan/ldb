@@ -85,7 +85,7 @@ void ldb_process_events(Server &server)
             server.AddClient(cli);
 
             //fprintf(stderr, "create a client:fd:%d \n");
-            log_info("create a client:[ip:%s],[port:%d],[fd:%d]", 
+            log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
                     link->getIp(), link->getPort(), link->getFd());
             continue;
         }
@@ -105,8 +105,8 @@ void ldb_process_events(Server &server)
         }
 
         if (ret == 0) { //a client exit
-            log_info("a client exit, ip:[%s],port:[%d]", cli->link_->getIp(), 
-                    cli->link_->getPort());
+            log_info("---<a client exit, ip:[%s],port:[%d]>---",
+                    cli->link_->getIp(), cli->link_->getPort());
 
             server.event_.delReadEvent(cli->link_->getFd());
             server.DeleteClient(cli->link_->getFd());

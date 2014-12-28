@@ -18,7 +18,7 @@ ldb_str_t *ldb_create_str(const char *str, int str_len)
     }
     
     //ldb_TOTAL_MALLOC += total;
-    fprintf(stderr, "sizeof(ldb_str_t) + str_len + 1 : %d\n", total);
+//    fprintf(stderr, "sizeof(ldb_str_t) + str_len + 1 : %d\n", total);
 
     p->len = str_len;
     p->free = 0;
@@ -93,12 +93,10 @@ int ldb_str_cat( ldb_str_t *istr, const char *str)
             }
 
             //ldb_TOTAL_MALLOC += (2 * istr->len - len - istr->free);
-
             if (p != istr) {
-                ldb_free_str_t(istr);
+            //    ldb_free_str_t(istr);
                 istr = p;
             }
-
             istr->free = istr->len;
 
         } else if (istr->len >= ONE_M_) {
@@ -109,12 +107,10 @@ int ldb_str_cat( ldb_str_t *istr, const char *str)
             }
 
             //ldb_TOTAL_MALLOC += (ONE_M_ + istr->len  - len - istr->free);
-
             if (p != istr) {
-                ldb_free_str_t(istr);
+            //    ldb_free_str_t(istr);
                 istr = p;
             }
-            
             istr->free = ONE_M_;
         }
     } else {

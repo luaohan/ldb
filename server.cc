@@ -7,23 +7,24 @@
 #include <iostream>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "server.h"
 #include "string_type.h"
+#include "daemon.h"
+#include "log.h"
 
-Server::Server(): daemonize_(false), configure_(NULL), logfile_(NULL)
+extern Log *info_log;
+extern Log *error_log;
+
+Server::Server()
 {
-    options_.create_if_missing = true;
-
-    leveldb::Status status 
-        = leveldb::DB::Open(options_, "/tmp/test_ldb", &db_);
-    assert(status.ok());
 }
 
 Server::~Server()
 {
-    configure_ = NULL;
-    logfile_ = NULL;
 }
 
 int Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
@@ -126,17 +127,40 @@ void Server::CreateComTable()
 
 }
 
-void Server::Run()
+int Server::Run(const char *config_file)
 {
+    int ret = config_.LoadConfig(config_file);
+    if (ret != 0) {
+        fprintf(stderr, "configfile is wrong.\n");
+        return -1;
+    }
+
+    int fd_info = open(config_.info_log_file_.c_str(), O_RDWR | O_CREAT | O_APPEND,
+            S_IRUSR | S_IWUSR);
+
+    std::string info_log_path = config_.info_log_file_;
+    info_log = new Log(fd_info, info_log_path, false);
+
+    int fd_error = open(config_.error_log_file_.c_str(), O_RDWR | O_CREAT | O_APPEND,
+            S_IRUSR | S_IWUSR);
+
+    std::string error_log_path = config_.error_log_file_;
+    error_log = new Log(fd_error, error_log_path, false);
+
+    options_.create_if_missing = true;
+    leveldb::Status status 
+        = leveldb::DB::Open(options_, config_.db_directory_.c_str(), &db_);
+    assert(status.ok());
+
     CreateComTable();                                          
 
     socket_.setNoblock();
     socket_.setNoNagle();
 
     int backlog = 512;
-    socket_.Listen("0.0.0.0", 8899, backlog);
+    socket_.Listen("0.0.0.0", config_.server_port_, backlog);
 
     event_.addReadEvent(socket_.getFd());
 
-    //if ( daemonize_ ) ldb_daemon();
+    if ( config_.daemon_ ) ldb_daemon();
 }
