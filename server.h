@@ -30,9 +30,11 @@ class Server {
         void DeleteClient(int fd);
         Client *FindClient(int fd);
 
-        void Insert(const leveldb::Slice& key, const leveldb::Slice& value);
-        void Get(const leveldb::Slice& key, std::string* value);
-        void Delete(const leveldb::Slice& key);
+        //ok: return 0
+        //error: return -1
+        int Insert(const leveldb::Slice& key, const leveldb::Slice& value);
+        int Get(const leveldb::Slice& key, std::string* value);
+        int Delete(const leveldb::Slice& key);
 
         void Run();
 

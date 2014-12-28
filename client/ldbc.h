@@ -15,11 +15,14 @@ class ClientImpl {
         ~ClientImpl(){ };
 
         //ok: return 0
+        //error: return -1
         int Set(std::string &key, std::string &value);
         int Get(std::string &key, std::string *value);
+        int Del(std::string &key);
 
     public:
         Socket socket_;
+        std::string buffer_;
 
 };
 

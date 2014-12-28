@@ -23,7 +23,7 @@ void ldb_set_command(Server *server, Client *client);
 
 void ldb_get_command(Server *server, Client *client);
 
-void ldb_update_command(Server *server, Client *client);
+//void ldb_update_command(Server *server, Client *client);
 
 void ldb_del_command(Server *server, Client *client);
 

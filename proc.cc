@@ -8,6 +8,10 @@
 
 #include "proc.h"
 #include "str.h" 
+#include "log.h"
+
+extern Log *info_log;
+extern Log *error_log;
 
 int ldb_tell_client( Client *client )
 {
@@ -16,8 +20,9 @@ int ldb_tell_client( Client *client )
 
 void process_client_info(Server &server, Client *client) 
 {
-    fprintf(stderr, "client_fd:%d, data:|%s|\n", client->link_->getFd(), 
-            client->recv_);
+    //fprintf(stderr, "client_fd:%d, data:|%s|\n", client->link_->getFd(), client->recv_);
+    log_info("ip:[%s], port:[%d], data:[%s]", client->link_->getIp(),
+            client->link_->getPort(),client->recv_);
 
     str2lower(client->recv_);
     strs2tokens(client->recv_, LDB_SPACE, client->argv_, &client->argc_);
@@ -29,7 +34,10 @@ void process_client_info(Server &server, Client *client)
 
         tell_len = ldb_tell_client(client);
         if (tell_len < 0) {
-            fprintf(stderr, "ldb_tell_client error:%s\n", strerror(errno));
+            //fprintf(stderr, "ldb_tell_client error:%s\n", strerror(errno));
+            log_error("ip:[%s], port:[%d], ldb_tell_client error:[%s],[%s],[%d]",
+                    client->link_->getIp(), client->link_->getPort(),
+                    strerror(errno),__FILE__, __LINE__);
             return ;
         }
 
@@ -40,10 +48,13 @@ void process_client_info(Server &server, Client *client)
     command->proc(&server, client);
     tell_len = ldb_tell_client(client);
     if (tell_len < 0) {
-        fprintf(stderr, "ldb_tell_client error:%s\n", strerror(errno));
+        //fprintf(stderr, "ldb_tell_client error:%s\n", strerror(errno));
+        log_error("ip:[%s], port:[%d], ldb_tell_client error:[%s],[%s],[%d]", 
+                client->link_->getIp(), client->link_->getPort(), 
+                strerror(errno), __FILE__, __LINE__);
         return ;
     }
-   
+
     return ;
 }
 
@@ -51,7 +62,8 @@ void ldb_process_events(Server &server)
 {
     int n = server.event_.waitReadEvent(server.fired_fd);
     if ( n < 0) {
-        // log()
+        log_error("WaitReadEvent error:[%s],[%s],[%d]", strerror(errno),
+                __FILE__, __LINE__);
         return ;
     }
 
@@ -60,7 +72,8 @@ void ldb_process_events(Server &server)
         if ( server.fired_fd[i] == server.socket_.getFd()) {
             Acceptor *link = server.socket_.Accept();
             if (link == NULL) {
-                //log()
+                log_error("Accept error:[%s],[%s],[%d]", strerror(errno),
+                        __FILE__, __LINE__);
                 continue;
             }
 
@@ -71,7 +84,9 @@ void ldb_process_events(Server &server)
             Client *cli = new Client(link);
             server.AddClient(cli);
 
-            fprintf(stderr, "create a client \n");
+            //fprintf(stderr, "create a client:fd:%d \n");
+            log_info("create a client:[ip:%s],[port:%d],[fd:%d]", 
+                    link->getIp(), link->getPort(), link->getFd());
             continue;
         }
 
@@ -79,7 +94,9 @@ void ldb_process_events(Server &server)
 
         int ret = cli->link_->readData(cli->recv_, 2048);
         if (ret < 0) {
-            //log_error();
+            log_error("[ip:%s],[port:%d],ReadData error:%s, %s, %d", cli->link_->getIp(),
+                    cli->link_->getPort(), strerror(errno), __FILE__, __LINE__);
+
             server.event_.delReadEvent(cli->link_->getFd());
             server.DeleteClient(cli->link_->getFd());
             delete cli->link_;
@@ -88,11 +105,14 @@ void ldb_process_events(Server &server)
         }
 
         if (ret == 0) { //a client exit
+            log_info("a client exit, ip:[%s],port:[%d]", cli->link_->getIp(), 
+                    cli->link_->getPort());
+
             server.event_.delReadEvent(cli->link_->getFd());
             server.DeleteClient(cli->link_->getFd());
             delete cli->link_;
             delete cli;
-            fprintf(stderr, "a client exit.\n");
+            //fprintf(stderr, "a client exit.\n");
             continue;
         }
 

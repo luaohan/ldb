@@ -26,7 +26,7 @@ void ldb_set_command(Server *server, Client *client)
         return ;
     }
     
-    fprintf(stderr, "sizeof(key): %d\n", key_len + 1);
+    //fprintf(stderr, "sizeof(key): %d\n", key_len + 1);
     memcpy(key, client->argv_[1], key_len);
     key[key_len] = '\0';
 
@@ -36,7 +36,7 @@ void ldb_set_command(Server *server, Client *client)
         return ;
     }
 
-    fprintf(stderr, "sizeof(value): %d\n", value_len + 1);
+    //fprintf(stderr, "sizeof(value): %d\n", value_len + 1);
     memcpy(value, client->argv_[2], value_len);
     value[value_len] = '\0';
 
@@ -45,38 +45,33 @@ void ldb_set_command(Server *server, Client *client)
 
     server->Insert(s_key, s_val);
 
-#if 0
-    ret = ldb_add_dict((server->db[client->dictid]).dict, key, value);
-    if (ret == -1) {
-        memcpy(client->buf, LDB_KEY_EXIST, strlen(LDB_KEY_EXIST));
-        return ;
-    }
-#endif
-
     memcpy(client->replay_, LDB_ADD_OK, strlen(LDB_ADD_OK));
     
     return ;
 }
 
-#if 0
-void ldb_get_command(ldb_server_t *server, ldb_client_t *client)
+void ldb_get_command(Server *server, Client *client)
 {
-    char *ret = NULL; 
-    if (client->argc != client->cmd->argc) {
-        memcpy(client->buf, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
+    if (client->argc_ != client->cmd->argc) {
+        memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
         return ;
     }
 
-    ret = ldb_fetch_value((server->db[client->dictid]).dict, client->argv[1]);
-    if (ret == NULL) {
-        memcpy(client->buf, LDB_NO_THE_KEY, strlen(LDB_NO_THE_KEY));
-        return ;
+    leveldb::Slice s_key(client->argv_[1], strlen(client->argv_[1]));
+    std::string s_val;
+
+    int ret = server->Get(s_key, &s_val);
+    if (ret == 0) {
+        memcpy(client->replay_, s_val.c_str(), s_val.size());
+    } else {
+        memcpy(client->replay_, LDB_NO_THE_KEY, strlen(LDB_NO_THE_KEY));
     }
     
-    memcpy(client->buf, ret, strlen(ret));
+    return ;
 }
 
-void ldb_update_command(ldb_server_t *server, ldb_client_t *client)
+#if 0
+void ldb_update_command(Server *server, Client *client)
 {
     int ret; 
     if (client->argc != client->cmd->argc) {
@@ -118,15 +113,28 @@ void ldb_update_command(ldb_server_t *server, ldb_client_t *client)
     memcpy(client->buf, LDB_UPDATE_OK, strlen(LDB_UPDATE_OK));
     fprintf(stderr, "update string later:%d\n", ldb_TOTAL_MALLOC);
 }
+#endif
 
-void ldb_del_command(ldb_server_t *server, ldb_client_t *client)
+void ldb_del_command(Server *server, Client *client)
 {
-    int ret; 
-    if (client->argc != client->cmd->argc) {
-        memcpy(client->buf, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
+    if (client->argc_ != client->cmd->argc) {
+        memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
         return ;
     }
   
+    leveldb::Slice s_key(client->argv_[1], strlen(client->argv_[1]));
+    std::string s_val;
+
+    int ret = server->Delete(s_key);
+    if (ret == 0) {
+        memcpy(client->replay_, LDB_DEL_OK, strlen(LDB_DEL_OK));
+    } else {
+        memcpy(client->replay_, LDB_NO_THE_KEY, strlen(LDB_NO_THE_KEY));
+    }
+    
+    return ;
+
+#if 0 
     ldb_hash_table_node_t *old_node = 
         ldb_find_dict(server->db[client->dictid].dict, client->argv[1]);
     if (old_node == NULL) {
@@ -151,9 +159,11 @@ void ldb_del_command(ldb_server_t *server, ldb_client_t *client)
     memcpy(client->buf, LDB_DEL_OK, strlen(LDB_DEL_OK));
 
     fprintf(stderr, "del string later:%d\n", ldb_TOTAL_MALLOC);
+#endif
 }
 
-void ldb_lookall_command(ldb_server_t *server, ldb_client_t *client)
+#if 0
+void ldb_lookall_command(Server *server, Client *client)
 {
     if (client->argc != client->cmd->argc) {
         memcpy(client->buf, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
@@ -178,7 +188,7 @@ void ldb_lookall_command(ldb_server_t *server, ldb_client_t *client)
 
 }
 
-void ldb_clear_command(ldb_server_t *server, ldb_client_t *client)
+void ldb_clear_command(Server *server, Client *client)
 {
     if (client->argc != client->cmd->argc) {
         memcpy(client->buf, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
@@ -218,7 +228,7 @@ void ldb_clear_command(ldb_server_t *server, ldb_client_t *client)
     fprintf(stderr, "clear later:%d\n", ldb_TOTAL_MALLOC);
 }
 
-void ldb_select_command(ldb_server_t *server, ldb_client_t *client)
+void ldb_select_command(Server *server, Client *client)
 {
     if (client->argc != client->cmd->argc) {
         memcpy(client->buf, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
