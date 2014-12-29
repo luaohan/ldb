@@ -118,18 +118,7 @@ int Config::LoadConfigFromStr(char *str)
                 fprintf(stderr, "config file para error\n");
                 return -1;
             }
-#if 0
-            int len = strlen(real_tokens[1]) + 1;
-            info_log_file_ = (char *)malloc( len );
-            if (info_log_file_ == NULL) {
-                fprintf(stderr, "config read error: %s\n", strerror(errno));
-                return -1;
-            }
-           
-            memcpy(info_log_file_, real_tokens[1], len);
-
-            info_log_file_[len] = '\0';
-#endif
+            
             info_log_file_ = real_tokens[1];
 
         }
@@ -139,18 +128,7 @@ int Config::LoadConfigFromStr(char *str)
                 fprintf(stderr, "config file para error\n");
                 return -1;
             }
-#if 0
-            int len = strlen(real_tokens[1]) + 1;
-            error_log_file_ = (char *)malloc( len );
-            if (error_log_file_ == NULL) {
-                fprintf(stderr, "config read error: %s\n", strerror(errno));
-                return -1;
-            }
-
-            memcpy(error_log_file_, real_tokens[1], len);
             
-            error_log_file_[len] = '\0';
-#endif
             error_log_file_ = real_tokens[1];
 
         } else if (strcmp(real_tokens[0], "db_directory") == 0) {
@@ -159,18 +137,7 @@ int Config::LoadConfigFromStr(char *str)
                 fprintf(stderr, "config file para error\n");
                 return -1;
             }
-#if 0
-            int len = strlen(real_tokens[1]) + 1;
-            db_directory_ = (char *)malloc( len );
-            if (db_directory_ == NULL) {
-                fprintf(stderr, "config read error: %s\n", strerror(errno));
-                return -1;
-            }
-
-            memcpy(db_directory_ , real_tokens[1], len);
             
-            db_directory_[len] = '\0';
-#endif
             db_directory_ = real_tokens[1];
 
         } else {

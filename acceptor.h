@@ -12,7 +12,7 @@
 class Acceptor {
 
     public:
-        Acceptor(bool local = true);
+        Acceptor();
         ~Acceptor();
 
         //ok: return 0
@@ -20,31 +20,20 @@ class Acceptor {
         int Listen(const char *ip, int port, int backlog);
 
         //error: return NULL
-        Acceptor *Accept();
+        Socket *Accept();
 
         void Close();
         
-        int getBacklog();
+        int getBacklog() const;
         int getFd() const;
-        int getPort();
-        char *getIp(); //error: return NULL
+        int getPort() const;
+        char *getIp() const; 
 
-        bool isNoblocked();
+        bool isNoblocked() const;
     
         //if uses these, call before Listen() 
-        int setNoblock();
-        void setReuseAddr(); 
-        void setLinger();
-        void setRcvBuf(int size);
-        void setSndBuf(int size);
-        void setNoNagle();
-   
-        //just like read() and write()
-        //ok: return the size of read
-        //error: return -1
-        //a client exit: return 0
-        int readData(char *buffer, int buffer_size);
-        int writeData(char *buffer, int buffer_size);
+        int SetNoblock();
+        void SetReuseAddr(); 
 
     private:
         int fd_;
