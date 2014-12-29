@@ -12,6 +12,7 @@
 #include "log.h"
 #include "socket.h"
 #include "acceptor.h"
+#include "socket.h"
 
 Acceptor::Acceptor(): 
     fd_(-1), port_(-1), backlog_(-1)
@@ -75,8 +76,7 @@ int Acceptor::Listen(const std::string &ip, int port, int backlog)
     
     if (listen(fd_, backlog_) == -1 ) {
         //LOG(ERROR)
-        close(fd_);
-        fd_ = -1;
+        Close();
         return -1;
     }
 
