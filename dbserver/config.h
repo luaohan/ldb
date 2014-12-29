@@ -6,6 +6,9 @@
 
 #include <string>
 
+namespace ldb {
+namespace dbserver {
+
 struct Config {
     
     Config();
@@ -32,4 +35,8 @@ struct Config {
 
 };
 
+} /*namespace ldb*/
+} /*namespace dbserver*/
+
 #endif
+

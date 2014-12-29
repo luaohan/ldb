@@ -1,4 +1,4 @@
-// ldb_server.h (2014-12-23)
+// server.h (2014-12-23)
 // WangPeng (1245268612@qq.com)
 
 #ifndef _LDB_SERVER_H_
@@ -15,6 +15,9 @@
 #include "acceptor.h"
 #include "e_epoll.h"
 #include "config.h"
+
+namespace ldb {
+namespace dbserver {
 
 class Command;
 class Client;
@@ -60,6 +63,9 @@ class Server {
 
         Config config_;
 };
+
+} /*namespace dbserver*/
+} /*namespace ldb*/
 
 
 #endif

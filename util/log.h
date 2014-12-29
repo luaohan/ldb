@@ -8,6 +8,9 @@
 #include <stdarg.h>
 #include <pthread.h>
 
+namespace ldb {
+namespace util {
+
 class Log {
 
     public:
@@ -38,5 +41,8 @@ class Log {
 #define log_info(fmt, args...) if (info_log != NULL) info_log->LogWrite(fmt, ##args)
 #define log_error(fmt, args...) if (error_log != NULL) error_log->LogWrite(fmt, ##args)
 
+} /*namespace util*/
+} /*namespace ldb*/
 
 #endif
+

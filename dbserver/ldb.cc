@@ -10,8 +10,7 @@
 #include "proc.h"
 #include "log.h"
 
-extern Log *info_log;
-extern Log *error_log;
+using namespace ldb::dbserver;
 
 int main(int argc, char **argv)
 {
@@ -21,7 +20,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "init server success\n");
 
     while (true) {
-        ldb_process_events(server);
+        process_events(server);
     }
 
     if (info_log != NULL) {

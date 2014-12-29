@@ -1,4 +1,4 @@
-// ldb_server.cc (2014-12-23)
+// server.cc (2014-12-23)
 // WangPeng (1245268612@qq.com)
 
 #include <stdio.h>
@@ -16,8 +16,8 @@
 #include "daemon.h"
 #include "log.h"
 
-extern Log *info_log;
-extern Log *error_log;
+namespace ldb {
+namespace dbserver {
 
 Server::Server()
 {
@@ -105,24 +105,24 @@ Command *Server::FindCommand(char *name)
 
 void Server::CreateComTable()
 {
-    Command ldb_commands_table[] = {
-        {"set", ldb_set_command, 3, "w"},
-        {"get", ldb_get_command, 2, "r"},
-        {"del", ldb_del_command, 2, "w"}/*,
-        {"update", ldb_update_command, 3, "w"},
-        {"lookall", ldb_lookall_command, 1, "r"},
-        {"clear", ldb_clear_command, 1, "w"},
-        {"select", ldb_select_command, 2, "w"}*/
+    Command commands_table[] = {
+        {"set", set_command, 3, "w"},
+        {"get", get_command, 2, "r"},
+        {"del", del_command, 2, "w"}/*,
+        {"update", update_command, 3, "w"},
+        {"lookall", lookall_command, 1, "r"},
+        {"clear", clear_command, 1, "w"},
+        {"select", select_command, 2, "w"}*/
     };  
     
-    AddCommand(ldb_commands_table[0]);
-    AddCommand(ldb_commands_table[1]);
-    AddCommand(ldb_commands_table[2]);
+    AddCommand(commands_table[0]);
+    AddCommand(commands_table[1]);
+    AddCommand(commands_table[2]);
 #if 0
-    AddCommand(ldb_commands_table[3]);
-    AddCommand(ldb_commands_table[4]);
-    AddCommand(ldb_commands_table[5]);
-    AddCommand(ldb_commands_table[6]);
+    AddCommand(commands_table[3]);
+    AddCommand(commands_table[4]);
+    AddCommand(commands_table[5]);
+    AddCommand(commands_table[6]);
 #endif
 
 }
@@ -162,5 +162,9 @@ int Server::Run(const char *config_file)
 
     event_.addReadEvent(socket_.getFd());
 
-    if ( config_.daemon_ ) ldb_daemon();
+    if ( config_.daemon_ ) daemon();
 }
+
+} /*namespace dbserver*/
+} /*namespace ldb*/
+

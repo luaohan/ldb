@@ -13,7 +13,7 @@
 extern Log *info_log;
 extern Log *error_log;
 
-int ldb_tell_client( Client *client )
+int tell_client( Client *client )
 {
     return client->link_->writeData(client->replay_, strlen(client->replay_));
 }
@@ -32,10 +32,10 @@ void process_client_info(Server &server, Client *client)
     if (command == NULL) {
         memcpy(client->replay_, LDB_NO_THE_COMMAND, strlen(LDB_NO_THE_COMMAND));
 
-        tell_len = ldb_tell_client(client);
+        tell_len = tell_client(client);
         if (tell_len < 0) {
-            //fprintf(stderr, "ldb_tell_client error:%s\n", strerror(errno));
-            log_error("ip:[%s], port:[%d], ldb_tell_client error:[%s],[%s],[%d]",
+            //fprintf(stderr, "tell_client error:%s\n", strerror(errno));
+            log_error("ip:[%s], port:[%d], tell_client error:[%s],[%s],[%d]",
                     client->link_->getIp(), client->link_->getPort(),
                     strerror(errno),__FILE__, __LINE__);
             return ;
@@ -46,10 +46,10 @@ void process_client_info(Server &server, Client *client)
     
     client->cmd = command;
     command->proc(&server, client);
-    tell_len = ldb_tell_client(client);
+    tell_len = tell_client(client);
     if (tell_len < 0) {
-        //fprintf(stderr, "ldb_tell_client error:%s\n", strerror(errno));
-        log_error("ip:[%s], port:[%d], ldb_tell_client error:[%s],[%s],[%d]", 
+        //fprintf(stderr, "tell_client error:%s\n", strerror(errno));
+        log_error("ip:[%s], port:[%d], tell_client error:[%s],[%s],[%d]", 
                 client->link_->getIp(), client->link_->getPort(), 
                 strerror(errno), __FILE__, __LINE__);
         return ;
@@ -58,7 +58,7 @@ void process_client_info(Server &server, Client *client)
     return ;
 }
 
-void ldb_process_events(Server &server)
+void process_events(Server &server)
 {
     int n = server.event_.waitReadEvent(server.fired_fd);
     if ( n < 0) {

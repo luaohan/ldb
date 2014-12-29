@@ -4,8 +4,12 @@
 #ifndef _LDB_DAEMON_H_
 #define _LDB_DAEMON_H_
 
+namespace ldb {
+namespace util {
 
-void ldb_daemon(void);
+void daemon(void);
 
+} /*namespace util*/
+} /*namespace ldb*/
 
 #endif

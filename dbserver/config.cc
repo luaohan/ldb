@@ -17,10 +17,13 @@
 
 #define LDB_CONFIG_BUF_SIZE 4096
 
+namespace ldb {
+namespace dbserver {
+
 Config::Config():
     daemon_(false), server_port_(8899)
 {
-    db_directory_ = "./ldb_directory";
+    db_directory_ = "./directory";
     info_log_file_ = "./log/loginfo";
     error_log_file_ = "./log/logerror";
 }
@@ -75,7 +78,7 @@ int Config::LoadConfigFromStr(char *str)
     
     for (i = 0; i < line_num; i++) 
     {
-        tokens[i] = ldb_str_trim(tokens[i], " ");
+        tokens[i] = str_trim(tokens[i], " ");
         if (tokens[i][0] == '#' || tokens[i] == NULL) { 
             continue;
         }
@@ -148,4 +151,7 @@ int Config::LoadConfigFromStr(char *str)
     
     return 0;
 }
+
+} /*namespace ldb*/
+} /*namespace dbserver*/
 

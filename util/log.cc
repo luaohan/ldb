@@ -13,6 +13,9 @@
 
 #include "log.h"
 
+namespace ldb {
+namespace util {
+
 Log *info_log = NULL;
 Log *error_log = NULL;
 
@@ -144,3 +147,7 @@ int Log::LogWrite(const char *fmt, ...){
     va_end(ap);
     return ret;
 }
+
+} /*namespace util*/
+} /*namespace ldb*/
+

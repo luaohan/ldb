@@ -6,19 +6,19 @@
 
 #include "str.h"
 
-//extern long long ldb_TOTAL_MALLOC;
+//extern long long TOTAL_MALLOC;
 
-ldb_str_t *ldb_create_str(const char *str, int str_len)
+str_t *create_str(const char *str, int str_len)
 {
-    int total = sizeof(ldb_str_t) + str_len + 1;
+    int total = sizeof(str_t) + str_len + 1;
 
-    ldb_str_t *p = (ldb_str_t *)malloc( total );
+    str_t *p = (str_t *)malloc( total );
     if (p == NULL) {
         return NULL;
     }
     
-    //ldb_TOTAL_MALLOC += total;
-//    fprintf(stderr, "sizeof(ldb_str_t) + str_len + 1 : %d\n", total);
+    //TOTAL_MALLOC += total;
+//    fprintf(stderr, "sizeof(str_t) + str_len + 1 : %d\n", total);
 
     p->len = str_len;
     p->free = 0;
@@ -31,50 +31,50 @@ ldb_str_t *ldb_create_str(const char *str, int str_len)
     return p;
 }
 
-void ldb_free_str_t(ldb_str_t *str)
+void free_str_t(str_t *str)
 {
     assert(str != NULL);
 #if 0
-    if( ldb_TOTAL_MALLOC > 0){
-        ldb_TOTAL_MALLOC -= (sizeof(ldb_str_t) + str->len + str->free + 1);
+    if( TOTAL_MALLOC > 0){
+        TOTAL_MALLOC -= (sizeof(str_t) + str->len + str->free + 1);
     }
 #endif
     free(str);
 }
 
-void ldb_free_str(char *str)
+void free_str(char *str)
 {
     assert(str != NULL);
 #if 0 
-    if( ldb_TOTAL_MALLOC > 0){
-        ldb_TOTAL_MALLOC -= (strlen(str) + 1);
+    if( TOTAL_MALLOC > 0){
+        TOTAL_MALLOC -= (strlen(str) + 1);
     }
 #endif
     free(str);
 }
 
-int ldb_str_len( const ldb_str_t *str )
+int str_len( const str_t *str )
 {
     assert(str != NULL);
 
     return str->len;
 }
 
-int ldb_str_avail(const ldb_str_t *str)
+int str_avail(const str_t *str)
 {
     assert(str != NULL);
 
     return str->free;
 }
 
-void ldb_str_clear(ldb_str_t *str)
+void str_clear(str_t *str)
 {
     str->free += str->len;
     str->len = 0;
     str->buf[0] = '\0';
 }
 
-int ldb_str_cat( ldb_str_t *istr, const char *str)
+int str_cat( str_t *istr, const char *str)
 {
     assert(istr != NULL && str != NULL);
     
@@ -86,29 +86,29 @@ int ldb_str_cat( ldb_str_t *istr, const char *str)
 
         if (istr->len < ONE_M_) {
 
-            ldb_str_t *p = (ldb_str_t *)realloc(istr, sizeof(ldb_str_t) + 2 * istr->len + 1);
+            str_t *p = (str_t *)realloc(istr, sizeof(str_t) + 2 * istr->len + 1);
 
             if (p == NULL) {
                 return -1;
             }
 
-            //ldb_TOTAL_MALLOC += (2 * istr->len - len - istr->free);
+            //TOTAL_MALLOC += (2 * istr->len - len - istr->free);
             if (p != istr) {
-            //    ldb_free_str_t(istr);
+            //    free_str_t(istr);
                 istr = p;
             }
             istr->free = istr->len;
 
         } else if (istr->len >= ONE_M_) {
 
-            ldb_str_t *p = (ldb_str_t *)realloc(istr, sizeof(ldb_str_t) + ONE_M_ + istr->len + 1);
+            str_t *p = (str_t *)realloc(istr, sizeof(str_t) + ONE_M_ + istr->len + 1);
             if (p == NULL) {
                 return -1;
             }
 
-            //ldb_TOTAL_MALLOC += (ONE_M_ + istr->len  - len - istr->free);
+            //TOTAL_MALLOC += (ONE_M_ + istr->len  - len - istr->free);
             if (p != istr) {
-            //    ldb_free_str_t(istr);
+            //    free_str_t(istr);
                 istr = p;
             }
             istr->free = ONE_M_;
@@ -125,14 +125,14 @@ int ldb_str_cat( ldb_str_t *istr, const char *str)
     return 0;
 }
 
-int ldb_str_cat_str( ldb_str_t *str1, ldb_str_t *str2)
+int str_cat_str( str_t *str1, str_t *str2)
 {
     assert (str1 != NULL && str2 != NULL);
 
-    return ldb_str_cat(str1, str2->buf);
+    return str_cat(str1, str2->buf);
 }
 
-char *ldb_str_trim( char *istr, const char *str)
+char *str_trim( char *istr, const char *str)
 {
     assert(istr != NULL && str != NULL);
 
@@ -155,7 +155,7 @@ char *ldb_str_trim( char *istr, const char *str)
     char *new_str = (char *)malloc(len + 1);
     memcpy(new_str, istr + start_p, len);
     new_str[len] = '\0';
-    ldb_TOTAL_MALLOC += (len + 1);
+    TOTAL_MALLOC += (len + 1);
     return new_str;
 #endif 
     memmove(istr, istr + start_p, len);
@@ -164,7 +164,7 @@ char *ldb_str_trim( char *istr, const char *str)
     return istr;
 }
 
-int ldb_str_cmp( const ldb_str_t *str1, const ldb_str_t *str2)
+int str_cmp( const str_t *str1, const str_t *str2)
 {
     assert(str1 != NULL && str2 != NULL);
     

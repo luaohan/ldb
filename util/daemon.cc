@@ -4,7 +4,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-void ldb_daemon(void) 
+namespace ldb {
+namespace util {
+
+void daemon(void) 
 {
     int fd;
 
@@ -26,3 +29,5 @@ void ldb_daemon(void)
     }
 }
 
+} /*namespace util*/
+} /*namespace ldb*/
