@@ -8,7 +8,7 @@
 
 #include "ldbc.h"
 
-int ClientImpl::Set(std::string &key, std::string &val)
+int Client::Set(std::string &key, std::string &val)
 {
     const char *s_key = key.c_str();
     const char *s_val = val.c_str();
@@ -42,7 +42,7 @@ int ClientImpl::Set(std::string &key, std::string &val)
     return 0;
 }
 
-int ClientImpl::Get(std::string &key, std::string *val)
+int Client::Get(std::string &key, std::string *val)
 {
     const char *s_key = key.c_str();
     
@@ -75,7 +75,7 @@ int ClientImpl::Get(std::string &key, std::string *val)
     return 0;
 }
 
-int ClientImpl::Del(std::string &key)
+int Client::Del(std::string &key)
 {
     const char *s_key = key.c_str();
     

@@ -8,11 +8,14 @@
 
 #include "socket.h"
 
-class ClientImpl {
+namespace ldb {
+namespace dbcli {
+
+class Client {
 
     public:
-        ClientImpl(){ };
-        ~ClientImpl(){ };
+        Client(){ };
+        ~Client(){ };
 
         //ok: return 0
         //error: return -1
@@ -26,5 +29,8 @@ class ClientImpl {
 
 };
 
+} /*namespace ldb*/
+} /*namespace dbcli*/
 
 #endif
+

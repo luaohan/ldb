@@ -14,6 +14,9 @@
 #include "acceptor.h"
 #include "socket.h"
 
+namespace ldb {
+namespace net {
+
 Acceptor::Acceptor(): 
     fd_(-1), port_(-1), backlog_(-1)
 {
@@ -142,4 +145,7 @@ void Acceptor::SetReuseAddr()
     //    //LOG(ERROr)
     //}
 }
+
+} /*namespace ldb*/
+} /*namespace net*/
 

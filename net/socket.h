@@ -9,44 +9,52 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-class Socket {
+namespace ldb {
+namespace net {
 
+class Socket {
     public:
         Socket();
+        //Socket(int fd, const std::string &ip, int port);
         ~Socket();
 
+        void Close();
         //ok: return 0
         //error: return -1
         int Connect(const char *ip, int port);
 
-        int getBacklog();
-        int getFd() const;
-        int getPort();
-        char *getIp(); 
-
-        bool isNoblocked();
+        int fd() const { return fd_; }
+        int port() const { return port_; }
+        std::string ip() const { return ip_; }
     
         //if uses these, call before Connect()
-        int setNoblock();
-        void setReuseAddr(); 
-        void setLinger();
-        void setRcvBuf(int size);
-        void setSndBuf(int size);
-        void setNoNagle();
+        int SetNoblock();
+        void SetReuseAddr(); 
+        void SetLinger();
+        void SetNoNagle();
+        void SetRcvBuf(int size);
+        void SetSndBuf(int size);
 
         //just like read() and write()
-        int readData(char *buffer, int buffer_size);
-        int writeData(char *buffer, int buffer_size);
-        
+        //ok: return the size of read
+        //error: return -1
+        //a client exit: return 0
+        int ReadData(char *buffer, int buffer_size);
+        int WriteData(char *buffer, int buffer_size);
+
     private:
-        
         int fd_;
-        char ip_[INET_ADDRSTRLEN];
+        std::string ip_;
         int port_;
-        int backlog_;
-        bool is_noblocked_;
+
+    private:
+        //No copying allowed
+        Socket(const Socket &);
+        void operator=(const Socket &);
 };
 
-
+} /*namespace ldb*/
+} /*namespace net*/
 
 #endif
+

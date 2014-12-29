@@ -6,6 +6,9 @@
 
 #include <string>
 
+namespace ldb {
+namespace net {
+
 class Socket;
 
 class Acceptor {
@@ -33,6 +36,9 @@ class Acceptor {
         Acceptor(const Acceptor &);
         void operator=(const Acceptor &);
 };
+
+} /*namespace ldb*/
+} /*namespace net*/
 
 #endif
 

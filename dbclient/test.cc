@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <string>
 
-#include "ldbc.h"
+#include "dbcli.h"
+
+using namespace ldb::dbcli;
 
 int main()
 {
-    ClientImpl cli;
+    Client cli;
     //cli.socket_.setNoblock();
 
     cli.socket_.setNoNagle();
