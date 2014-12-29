@@ -4,61 +4,35 @@
 #ifndef _SOCKET_H_
 #define _SOCKET_H_
 
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
+#include <string>
+
+class Socket;
 
 class Acceptor {
 
     public:
-        Acceptor(bool local = true);
+        Acceptor();
         ~Acceptor();
 
-        //ok: return 0
-        //error: return -1
-        int Listen(const char *ip, int port, int backlog);
-
-        //error: return NULL
-        Acceptor *Accept();
-
+        int Listen(const std::string &ip, int port, int backlog);
+        Socket *Accept();
         void Close();
         
-        int getBacklog();
-        int getFd() const;
-        int getPort();
-        char *getIp(); //error: return NULL
-
-        bool isNoblocked();
+        int fd() const;
     
-        //if uses these, call before Listen() 
-        int setNoblock();
-        void setReuseAddr(); 
-        void setLinger();
-        void setRcvBuf(int size);
-        void setSndBuf(int size);
-        void setNoNagle();
-   
-        //just like read() and write()
-        //ok: return the size of read
-        //error: return -1
-        //a client exit: return 0
-        int readData(char *buffer, int buffer_size);
-        int writeData(char *buffer, int buffer_size);
+        int SetNonBlock();
+        void SetReuseAddr(); 
 
     private:
         int fd_;
-        char ip_[INET_ADDRSTRLEN];
+        std::string ip_;
         int port_;
         int backlog_;
-        bool is_noblocked_;
 
     private:
-        //No copying allowed
         Acceptor(const Acceptor &);
         void operator=(const Acceptor &);
 };
 
-
-
 #endif
+
