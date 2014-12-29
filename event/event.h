@@ -6,18 +6,21 @@
 
 #include <sys/epoll.h>
 
-class Epoll {
+namespace ldb {
+namespace event {
+
+class Event {
 
     public:
-        Epoll();
-        ~Epoll();
+        Event();
+        ~Event();
 
-        int addReadEvent(int fd);
-        int delReadEvent(int fd);
+        int AddReadEvent(int fd);
+        int AelReadEvent(int fd);
 
         //ok: return the num of the events 
         //error: return -1
-        int waitReadEvent(int *fired_fd, int time_out = -1);
+        int WaitReadEvent(int *fired_fd, int time_out = -1);
 
     private:
         int epfd_;
@@ -26,5 +29,7 @@ class Epoll {
         struct epoll_event *events_;
 };
 
+} /*namespace ldb*/
+} /*namespace event*/
 
 #endif

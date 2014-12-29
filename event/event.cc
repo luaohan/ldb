@@ -6,9 +6,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "e_epoll.h"
+#include "event.h"
 
-Epoll::Epoll()
+namespace ldb {
+namespace event {
+
+Event::Event()
 {
     epfd_ = epoll_create(max_connections_);
 
@@ -17,13 +20,13 @@ Epoll::Epoll()
 
 }
 
-Epoll::~Epoll()
+Event::~Event()
 {
     if (epfd_ > 0) close(epfd_);
     if (events_ != NULL ) free(events_);
 }
 
-int Epoll::addReadEvent(int fd)
+int Event::AddReadEvent(int fd)
 {
     struct epoll_event ee;
     ee.data.fd = fd;
@@ -37,7 +40,7 @@ int Epoll::addReadEvent(int fd)
     return 0;
 }
 
-int Epoll::delReadEvent(int fd)
+int Event::DelReadEvent(int fd)
 {
     struct epoll_event ee;
     ee.data.fd = fd;
@@ -51,7 +54,7 @@ int Epoll::delReadEvent(int fd)
     return 0;
 }
 
-int Epoll::waitReadEvent(int *fired_fd, int time_out)
+int Event::WaitReadEvent(int *fired_fd, int time_out)
 {
     int n = epoll_wait(epfd_, events_, max_connections_, time_out);
     if (n < 0) {
@@ -68,3 +71,7 @@ int Epoll::waitReadEvent(int *fired_fd, int time_out)
 
     return n;
 }
+
+} /*namespace ldb*/
+} /*namespace event*/
+
