@@ -7,8 +7,8 @@
 #include "server.h"
 #include "client.h"
 
-class Server;
-class Client;
+namespace ldb {
+namespace dbserver {
 
 typedef void command_proc(Server *server, Client *c);
 
@@ -24,5 +24,8 @@ struct Command
 
     const char *sflags;   // 字符串表示的 FLAG
 };
+
+} /*namespace ldb*/
+} /*namespace dbserver*/
 
 #endif

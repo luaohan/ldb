@@ -5,16 +5,19 @@
 #define _LDB_CLIENT_H_
 
 #include "command.h"
-#include "acceptor.h"
+#include "socket.h"
+
+namespace ldb {
+namespace dbserver {
 
 class Client {
 
     public:
-        Client(Acceptor *link):link_(link){ }
+        Client(Socket *link):link_(link){ }
         ~Client(){ }
 
     public:
-        Acceptor *link_;
+        Socket *link_;
 
         int argc_;        //客户端发来的命令的参数的个数
         char *argv_[10];  //客户端发来的命令的参数
@@ -26,5 +29,7 @@ class Client {
         char replay_[BUFFER_SIZE];  //回复缓冲区
 };
 
+} /*namespace ldb*/
+} /*namespace dbserver*/
 
 #endif
