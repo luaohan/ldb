@@ -15,13 +15,29 @@ int main()
 
     cli.socket_.Connect("127.0.0.1", 8899);
     
-    std::string key = "key";
-    std::string val = "val";
+    std::string key = "keyaaabbb";
+    std::string val = "valaaabbb";
+    std::string val2 = "valaaabbb2";
+    std::string val3 = "valaaabbb3";
     
-    for (int i = 0; i < 100000; i++) {
+    //for (int i = 0; i < 100000; i++) {
         cli.Set(key, val);
-        printf("%d\n", i);
-    }
+        cli.Get(key, &val);
+        printf(":%s\n", val.c_str());
+        cli.Del(key);
+        cli.Set(key, val2);
+        cli.Get(key, &val);
+        printf(":%s\n", val.c_str());
+        cli.Del(key);
+        cli.Set(key, val3);
+        cli.Get(key, &val);
+        printf(":%s\n", val.c_str());
+        cli.Del(key);
+        cli.Del(key);
+        cli.Get(key, &val);
+        printf(":%s\n", val.c_str());
+    //    printf("%d\n", i);
+    //}
     
     //for (long int i = 0; i < 1000000000; i++) {}
 

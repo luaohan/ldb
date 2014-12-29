@@ -7,38 +7,54 @@
 #include <iostream>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "server.h"
 #include "string_type.h"
+#include "daemon.h"
+#include "log.h"
 
-Server::Server(): daemonize_(false), configure_(NULL), logfile_(NULL)
+extern Log *info_log;
+extern Log *error_log;
+
+Server::Server()
 {
-    options_.create_if_missing = true;
-
-    leveldb::Status status 
-        = leveldb::DB::Open(options_, "/tmp/test_ldb", &db_);
-    assert(status.ok());
 }
 
 Server::~Server()
 {
-    configure_ = NULL;
-    logfile_ = NULL;
 }
 
-void Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
+int Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
 {
-    db_->Put(write_options_, key, value);
+    leveldb::Status status;
+    status = db_->Put(write_options_, key, value);
+    if (status.ok())
+        return 0;
+    else 
+        return -1;
 }
 
-void Server::Get(const leveldb::Slice& key, std::string* value)
+int Server::Get(const leveldb::Slice& key, std::string* value)
 {
-    db_->Get(read_options_, key, value);
+    leveldb::Status status;
+    status = db_->Get(read_options_, key, value);
+    if (status.ok())
+        return 0;
+    else 
+        return -1;
 }
 
-void Server::Delete(const leveldb::Slice& key)
+int Server::Delete(const leveldb::Slice& key)
 {
-    db_->Delete(write_options_, key);
+    leveldb::Status status;
+    status = db_->Delete(write_options_, key);
+    if (status.ok())
+        return 0;
+    else 
+        return -1;
 }
 
 void Server::AddCommand(Command &com)
@@ -90,38 +106,61 @@ Command *Server::FindCommand(char *name)
 void Server::CreateComTable()
 {
     Command ldb_commands_table[] = {
-        {"set", ldb_set_command, 3, "w"}/*,
+        {"set", ldb_set_command, 3, "w"},
         {"get", ldb_get_command, 2, "r"},
+        {"del", ldb_del_command, 2, "w"}/*,
         {"update", ldb_update_command, 3, "w"},
-        {"del", ldb_del_command, 2, "w"},
         {"lookall", ldb_lookall_command, 1, "r"},
         {"clear", ldb_clear_command, 1, "w"},
         {"select", ldb_select_command, 2, "w"}*/
     };  
     
     AddCommand(ldb_commands_table[0]);
+    AddCommand(ldb_commands_table[1]);
+    AddCommand(ldb_commands_table[2]);
 #if 0
-    server.AddCommand(ldb_commands_table[1]);
-    server.AddCommand(ldb_commands_table[2]);
-    server.AddCommand(ldb_commands_table[3]);
-    server.AddCommand(ldb_commands_table[4]);
-    server.AddCommand(ldb_commands_table[5]);
-    server.AddCommand(ldb_commands_table[6]);
+    AddCommand(ldb_commands_table[3]);
+    AddCommand(ldb_commands_table[4]);
+    AddCommand(ldb_commands_table[5]);
+    AddCommand(ldb_commands_table[6]);
 #endif
 
 }
 
-void Server::Run()
+int Server::Run(const char *config_file)
 {
+    int ret = config_.LoadConfig(config_file);
+    if (ret != 0) {
+        fprintf(stderr, "configfile is wrong.\n");
+        return -1;
+    }
+
+    int fd_info = open(config_.info_log_file_.c_str(), O_RDWR | O_CREAT | O_APPEND,
+            S_IRUSR | S_IWUSR);
+
+    std::string info_log_path = config_.info_log_file_;
+    info_log = new Log(fd_info, info_log_path, false);
+
+    int fd_error = open(config_.error_log_file_.c_str(), O_RDWR | O_CREAT | O_APPEND,
+            S_IRUSR | S_IWUSR);
+
+    std::string error_log_path = config_.error_log_file_;
+    error_log = new Log(fd_error, error_log_path, false);
+
+    options_.create_if_missing = true;
+    leveldb::Status status 
+        = leveldb::DB::Open(options_, config_.db_directory_.c_str(), &db_);
+    assert(status.ok());
+
     CreateComTable();                                          
 
     socket_.setNoblock();
     socket_.setNoNagle();
 
     int backlog = 512;
-    socket_.Listen("0.0.0.0", 8899, backlog);
+    socket_.Listen("0.0.0.0", config_.server_port_, backlog);
 
     event_.addReadEvent(socket_.getFd());
 
-    //if ( daemonize_ ) ldb_daemon();
+    if ( config_.daemon_ ) ldb_daemon();
 }

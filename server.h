@@ -14,6 +14,7 @@
 #include "client.h"
 #include "acceptor.h"
 #include "e_epoll.h"
+#include "config.h"
 
 class Command;
 class Client;
@@ -30,11 +31,13 @@ class Server {
         void DeleteClient(int fd);
         Client *FindClient(int fd);
 
-        void Insert(const leveldb::Slice& key, const leveldb::Slice& value);
-        void Get(const leveldb::Slice& key, std::string* value);
-        void Delete(const leveldb::Slice& key);
+        //ok: return 0
+        //error: return -1
+        int Insert(const leveldb::Slice& key, const leveldb::Slice& value);
+        int Get(const leveldb::Slice& key, std::string* value);
+        int Delete(const leveldb::Slice& key);
 
-        void Run();
+        int Run(const char *config_file);
 
     private:
         void AddCommand(Command &com);
@@ -49,17 +52,13 @@ class Server {
         std::vector<Command> commands_;
         std::vector<Client *> clients_;
 
-        char *configure_;
-        char *logfile_;
-        
-        bool daemonize_;
-
     public:
         Epoll event_;
         int fired_fd[1024];
 
         Acceptor socket_;
 
+        Config config_;
 };
 
 
