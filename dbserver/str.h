@@ -6,6 +6,9 @@
 
 #define ONE_M_ 1024 * 1024 // 1M
 
+namespace ldb {
+namespace dbserver {
+
 typedef struct str_t 
 {
     int len;    //str 的长度, buf 数组中已经使用字节的数量
@@ -39,5 +42,8 @@ int str_cmp( const str_t *str1, const str_t *str2);
 int strs2tokens(char *strs, const char *delim, char *tokens[], int *num);
 
 void str2lower(char *str);
+
+} /*namespace ldb*/
+} /*namespace dbserver*/
 
 #endif

@@ -7,13 +7,13 @@
 #include <iostream>
 #include <vector>
 #include <leveldb/db.h>
-#include <leveldb/slice.h>
 #include <string>
+
+#include <net/acceptor.h>
+#include <event/event.h>
 
 #include "command.h"
 #include "client.h"
-#include "acceptor.h"
-#include "e_epoll.h"
 #include "config.h"
 
 namespace ldb {
@@ -36,9 +36,9 @@ class Server {
 
         //ok: return 0
         //error: return -1
-        int Insert(const leveldb::Slice& key, const leveldb::Slice& value);
-        int Get(const leveldb::Slice& key, std::string* value);
-        int Delete(const leveldb::Slice& key);
+        int Insert(const std::string& key, const std::string& value);
+        int Get(const std::string& key, std::string* value);
+        int Delete(const std::string& key);
 
         int Run(const char *config_file);
 
@@ -56,10 +56,10 @@ class Server {
         std::vector<Client *> clients_;
 
     public:
-        Epoll event_;
+        ldb::event::Event event_;
         int fired_fd[1024];
 
-        Acceptor socket_;
+        ldb::net::Acceptor acceptor_;
 
         Config config_;
 };

@@ -11,10 +11,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include <util/daemon.h>
+#include <util/log.h>
+
 #include "server.h"
 #include "string_type.h"
-#include "daemon.h"
-#include "log.h"
 
 namespace ldb {
 namespace dbserver {
@@ -27,7 +28,7 @@ Server::~Server()
 {
 }
 
-int Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
+int Server::Insert(const std::string& key, const std::string& value)
 {
     leveldb::Status status;
     status = db_->Put(write_options_, key, value);
@@ -37,7 +38,7 @@ int Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
         return -1;
 }
 
-int Server::Get(const leveldb::Slice& key, std::string* value)
+int Server::Get(const std::string& key, std::string* value)
 {
     leveldb::Status status;
     status = db_->Get(read_options_, key, value);
@@ -47,7 +48,7 @@ int Server::Get(const leveldb::Slice& key, std::string* value)
         return -1;
 }
 
-int Server::Delete(const leveldb::Slice& key)
+int Server::Delete(const std::string& key)
 {
     leveldb::Status status;
     status = db_->Delete(write_options_, key);
@@ -72,7 +73,7 @@ void Server::DeleteClient(int fd)
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->link_->getFd() == fd) {
+        if ((*i)->link_->fd() == fd) {
             clients_.erase(i);
             break;
         }
@@ -84,10 +85,12 @@ Client *Server::FindClient(int fd)
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->link_->getFd() == fd) {
+        if ((*i)->link_->fd() == fd) {
             return (*i);
         }
     }
+
+    return NULL;
 }
 
 Command *Server::FindCommand(char *name)
@@ -139,13 +142,13 @@ int Server::Run(const char *config_file)
             S_IRUSR | S_IWUSR);
 
     std::string info_log_path = config_.info_log_file_;
-    info_log = new Log(fd_info, info_log_path, false);
+    //info_log = new Log(fd_info, info_log_path, false);
 
     int fd_error = open(config_.error_log_file_.c_str(), O_RDWR | O_CREAT | O_APPEND,
             S_IRUSR | S_IWUSR);
 
     std::string error_log_path = config_.error_log_file_;
-    error_log = new Log(fd_error, error_log_path, false);
+    //error_log = new Log(fd_error, error_log_path, false);
 
     options_.create_if_missing = true;
     leveldb::Status status 
@@ -154,15 +157,22 @@ int Server::Run(const char *config_file)
 
     CreateComTable();                                          
 
-    socket_.setNoblock();
-    socket_.setNoNagle();
 
     int backlog = 512;
-    socket_.Listen("0.0.0.0", config_.server_port_, backlog);
+    int rc = acceptor_.Listen("0.0.0.0", config_.server_port_, backlog);
+    if (rc == -1) {
+        return -1;
+    }
+    //must be after listen
+    acceptor_.SetNonBlock();
 
-    event_.addReadEvent(socket_.getFd());
+    event_.AddReadEvent(acceptor_.fd());
 
-    if ( config_.daemon_ ) daemon();
+    if ( config_.daemon_ )  {
+        ldb::util::daemon();
+    }
+
+    return 0;
 }
 
 } /*namespace dbserver*/

@@ -19,6 +19,10 @@
 #define SELECT_OK "select ok"
 #define SELECT_ERROR "select error"
 
+
+namespace ldb {
+namespace dbserver {
+
 void set_command(Server *server, Client *client);
 
 void get_command(Server *server, Client *client);
@@ -32,5 +36,8 @@ void lookall_command(Server *server, Client *client);
 void clear_command(Server *server, Client *client);
 
 void select_command(Server *server, Client *client);
+
+} /*namespace ldb*/
+} /*namespace dbserver*/
 
 #endif

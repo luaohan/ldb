@@ -34,6 +34,8 @@ int Acceptor::fd() const
 
 int Acceptor::SetNonBlock()
 {
+    assert(fd_ != -1);
+
     int flags;
 
     if ((flags = fcntl(fd_, F_GETFL, NULL)) < 0) {

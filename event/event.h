@@ -16,7 +16,7 @@ class Event {
         ~Event();
 
         int AddReadEvent(int fd);
-        int AelReadEvent(int fd);
+        int DelReadEvent(int fd);
 
         //ok: return the num of the events 
         //error: return -1

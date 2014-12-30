@@ -8,6 +8,9 @@
 
 //extern long long TOTAL_MALLOC;
 
+namespace ldb {
+namespace dbserver {
+
 str_t *create_str(const char *str, int str_len)
 {
     int total = sizeof(str_t) + str_len + 1;
@@ -82,7 +85,7 @@ int str_cat( str_t *istr, const char *str)
 
     istr->len += strlen(str);
 
-    if ( strlen(str) > istr->free ) {
+    if ( strlen(str) > (size_t)istr->free ) {
 
         if (istr->len < ONE_M_) {
 
@@ -196,10 +199,13 @@ int strs2tokens(char *strs, const char *delim, char *tokens[], int *num)
 void str2lower(char *str)
 {
     assert(str != NULL);
-    
-    int i = 0;
-    while (str[i] != '\0') {
-        str[i] = tolower(str[i++]);
+    while (*str != '\0') {
+        *str = (char)tolower(*str);
+        str++;
     }
 
 }
+
+} /*namespace ldb*/
+} /*namespace dbserver*/
+

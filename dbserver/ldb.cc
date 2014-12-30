@@ -6,9 +6,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#include <util/log.h>
 #include "server.h"
-#include "proc.h"
-#include "log.h"
 
 using namespace ldb::dbserver;
 
@@ -17,19 +17,11 @@ int main(int argc, char **argv)
     Server server;
     server.Run("./ldb.conf");
     
-    fprintf(stderr, "init server success\n");
+    //fprintf(stderr, "init server success\n");
 
-    while (true) {
-        process_events(server);
-    }
-
-    if (info_log != NULL) {
-        delete info_log;
-    }
-
-    if (error_log != NULL) {
-        delete error_log;
-    }
+    //while (true) {
+    //    process_events(server);
+    //}
 
     return 0;
 }            
