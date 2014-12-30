@@ -124,16 +124,18 @@ int Log::Rotate()
             tm->tm_hour, tm->tm_min, tm->tm_sec);
 
     int ret = rename(logfile_path_.c_str(), newpath);
-    if(ret == -1){
+    if (ret == -1) {
         return -1;
     }
 
     fd_ = open(logfile_path_.c_str(), O_RDWR | O_CREAT | O_APPEND);
-    if(fd_ == -1) {
+    if (fd_ == -1) {
         return -1; 
     }
 
     current_size_ = 0;
+
+    return 0;
 }
 
 int Log::LogWrite(const char *fmt, ...){

@@ -5,28 +5,25 @@
 #define _LDBC_H_
 
 #include <string>
-
-#include "socket.h"
+#include <net/socket.h>
 
 namespace ldb {
 namespace dbcli {
 
 class Client {
+public:
+    Client(){ };
+    ~Client(){ };
 
-    public:
-        Client(){ };
-        ~Client(){ };
+    //ok: return 0
+    //error: return -1
+    int Set(const std::string &key, const std::string &value);
+    int Get(const std::string &key, std::string *value);
+    int Del(const std::string &key);
 
-        //ok: return 0
-        //error: return -1
-        int Set(std::string &key, std::string &value);
-        int Get(std::string &key, std::string *value);
-        int Del(std::string &key);
-
-    public:
-        Socket socket_;
-        std::string buffer_;
-
+public:
+    ldb::net::Socket socket_;
+    std::string buffer_;
 };
 
 } /*namespace ldb*/

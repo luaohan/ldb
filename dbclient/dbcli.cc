@@ -3,12 +3,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <string.h>
 
-#include "ldbc.h"
+#include "dbcli.h"
 
-int Client::Set(std::string &key, std::string &val)
+namespace ldb {
+namespace dbcli {
+
+int Client::Set(const std::string &key, const std::string &val)
 {
     const char *s_key = key.c_str();
     const char *s_val = val.c_str();
@@ -24,14 +26,14 @@ int Client::Set(std::string &key, std::string &val)
     buffer[len] = '\0';
 
     int ret;
-    ret = socket_.writeData(buffer, len + 1);
+    ret = socket_.WriteData(buffer, len + 1);
     if (ret < 0) {
         //log()
         return -1;
     }
 
     char replay[1024];
-    ret = socket_.readData(replay, 1024);
+    ret = socket_.ReadData(replay, 1024);
     if (ret < 0) {
         //log()
         return -1;
@@ -42,7 +44,7 @@ int Client::Set(std::string &key, std::string &val)
     return 0;
 }
 
-int Client::Get(std::string &key, std::string *val)
+int Client::Get(const std::string &key, std::string *val)
 {
     const char *s_key = key.c_str();
     
@@ -54,14 +56,14 @@ int Client::Get(std::string &key, std::string *val)
     buffer[len] = '\0';
 
     int ret;
-    ret = socket_.writeData(buffer, len + 1);
+    ret = socket_.WriteData(buffer, len + 1);
     if (ret < 0) {
         //log();
         return -1;
     }
 
     char replay[1024];
-    ret = socket_.readData(replay, 1024);
+    ret = socket_.ReadData(replay, 1024);
     if (ret < 0) {
         //log()
         return -1;
@@ -75,7 +77,7 @@ int Client::Get(std::string &key, std::string *val)
     return 0;
 }
 
-int Client::Del(std::string &key)
+int Client::Del(const std::string &key)
 {
     const char *s_key = key.c_str();
     
@@ -87,14 +89,14 @@ int Client::Del(std::string &key)
     buffer[len] = '\0';
 
     int ret;
-    ret = socket_.writeData(buffer, len + 1);
+    ret = socket_.WriteData(buffer, len + 1);
     if (ret < 0) {
         //log();
         return -1;
     }
 
     char replay[1024];
-    ret = socket_.readData(replay, 1024);
+    ret = socket_.ReadData(replay, 1024);
     if (ret < 0) {
         return -1;
     }
@@ -105,3 +107,8 @@ int Client::Del(std::string &key)
 
     return 0;
 }
+
+} /*dbcli*/
+} /*ldb*/
+
+

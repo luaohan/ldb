@@ -13,14 +13,14 @@ WARNINGS := -Wall -Wno-unused -Wno-format
 DEFS     := 
 EXTRA_CFLAGS := 
 
-INC_DIR   = ../
+INC_DIR   = 
 SRC_DIR   = 
 OBJ_DIR   = 
 EXTRA_SRC = 
 EXCLUDE_FILES = 
 
 SUFFIX       = c cpp cc cxx
-TARGET       := libldbdbcli.so
+TARGET       := libldbutil.so
 #TARGET_TYPE  := ar
 #TARGET_TYPE  := app
 TARGET_TYPE  := so
