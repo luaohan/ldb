@@ -8,11 +8,11 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <stdlib.h>
 
-#include "log.h"
+#include <util/log.h>
 #include "socket.h"
 #include "acceptor.h"
-#include "socket.h"
 
 namespace ldb {
 namespace net {
@@ -69,7 +69,7 @@ int Acceptor::Listen(const std::string &ip, int port, int backlog)
     }
     addr.sin_port = htons(port);
 
-    int rc = bind(fd_, (struct sockaddr *)&addr, sizeof(struct sockaddr_in))
+    int rc = bind(fd_, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
     if (rc == -1 ) {
         //LOG(ERROR)
         close(fd_);

@@ -16,6 +16,11 @@ Socket::Socket():
 {
 }
 
+Socket::Socket(int fd, const std::string &ip, int port)
+    : fd_(fd), ip_(ip), port_(port)
+{
+}
+
 Socket::~Socket()
 {
     Close();
@@ -51,17 +56,21 @@ int Socket::Connect(const char *ip, int port)
     int on = 1;
 
     fd_ = socket( AF_INET, SOCK_STREAM, 0 );
+    if (fd_ == -1) {
+        //LOG(ERROR)
+        return -1;
+    }
 
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip);
     addr.sin_port = htons(port);
     result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
     if ( result != 0 ) {
-        Close(fd_);
+        Close();
         return -1;
     }
     
-    strcpy(ip_, ip);
+    ip_ == ip;
     port_ = port;
 
     return 0;
@@ -114,30 +123,24 @@ int Socket::ReadData(char *buffer, int buffer_size)
 {
     int ret = 0;
     int want = buffer_size;
-    while(want  > 0)
-    {
+    while (want  > 0) {
         int len = read(fd_, buffer, want);
-        if(len == -1){
+        if (len == -1) {
             if(errno == EINTR){
 
                 continue;
-            }else if(errno == EWOULDBLOCK || errno == EAGAIN){
-                break;
-            }else{
-                return -1;
-            }
-        }else{
-            if(len == 0){
-                return 0;
             }
 
-            ret += len;
-            buffer += len;
-            want -= len;
-        }       
-        if( !is_noblocked_ ){
-            break;
+            return -1;
+        } 
+
+        if (len == 0) {
+            return 0;
         }
+
+        ret += len;
+        buffer += len;
+        want -= len;
     }
 
     return ret;
@@ -147,28 +150,23 @@ int Socket::WriteData(char *buffer, int buffer_size)
 {
     int ret = 0;
     int want = buffer_size;
-    while( want > 0 )
-    {
+    while ( want > 0 ) {
         int len = write(fd_, buffer, want);
-        if(len == -1){
-            if(errno == EINTR){
+        if (len == -1) {
+            if (errno == EINTR) {
                 continue;
-            }else if(errno == EWOULDBLOCK || errno == EAGAIN){
-                break;
-            }else{
-                return -1;
             }
-        }else{
-            if(len == 0){
-                break;
-            }
-            ret += len;
-            buffer += len;
-            want -= len;
+
+            return -1;
         }
-        if(!is_noblocked_){
+        
+        if (len == 0) {
             break;
         }
+
+        ret += len;
+        buffer += len;
+        want -= len;
     }
 
     return ret;
