@@ -18,16 +18,15 @@ struct Config {
     //否则，返回 -1
     int LoadConfig(const char *filename);
     
-    
     bool daemon_;
 
     int server_port_;
     
-    std::string info_log_file_;
-
-    std::string error_log_file_;
+    std::string log_file_;
 
     std::string db_directory_;
+
+    int level_;
     
 
     private:

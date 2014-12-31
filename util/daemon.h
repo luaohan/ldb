@@ -7,7 +7,7 @@
 namespace ldb {
 namespace util {
 
-void daemon(void);
+void Daemon(void);
 
 } /*namespace util*/
 } /*namespace ldb*/

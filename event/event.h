@@ -15,12 +15,16 @@ class Event {
         Event();
         ~Event();
 
-        int AddReadEvent(int fd);
-        int DelReadEvent(int fd);
+        int AddEvent(int fd, int mark);
+        int DelEvent(int fd, int mark);
 
         //ok: return the num of the events 
         //error: return -1
-        int WaitReadEvent(int *fired_fd, int time_out = -1);
+        int WaitEvent(int *fired_fd, int time_out = -1);
+
+        static const int E_EPOLLIN = EPOLLIN;
+        static const int E_EPOLLOUT = EPOLLOUT;
+
 
     private:
         int epfd_;

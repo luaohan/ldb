@@ -159,10 +159,6 @@ int Socket::WriteData(char *buffer, int buffer_size)
 
             return -1;
         }
-        
-        if (len == 0) {
-            break;
-        }
 
         ret += len;
         buffer += len;

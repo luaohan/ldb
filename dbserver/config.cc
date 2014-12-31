@@ -24,8 +24,7 @@ Config::Config():
     daemon_(false), server_port_(8899)
 {
     db_directory_ = "./directory";
-    info_log_file_ = "./log/loginfo";
-    error_log_file_ = "./log/logerror";
+    log_file_ = "./log/loginfo";
 }
 
 Config::~Config()
@@ -104,7 +103,8 @@ int Config::LoadConfigFromStr(char *str)
                 fprintf(stderr, "config file para error\n");
                 return -1;
             } 
-        } else if (strcmp(real_tokens[0], "server_port") == 0) {
+        } 
+        else if (strcmp(real_tokens[0], "server_port") == 0) {
 
             if (real_line_num != 2) {
                 fprintf(stderr, "config file para error\n");
@@ -115,26 +115,27 @@ int Config::LoadConfigFromStr(char *str)
 
             server_port_ = port;
 
-        } else if (strcmp(real_tokens[0], "infologfile") == 0) {
+        } 
+        else if (strcmp(real_tokens[0], "level") == 0) {
 
             if (real_line_num != 2) {
                 fprintf(stderr, "config file para error\n");
                 return -1;
             }
             
-            info_log_file_ = real_tokens[1];
-
-        }
-        else if (strcmp(real_tokens[0], "errorlogfile") == 0) {
+            level_ = atoi(real_tokens[1]);
+        } 
+        else if (strcmp(real_tokens[0], "logfile") == 0) {
 
             if (real_line_num != 2) {
                 fprintf(stderr, "config file para error\n");
                 return -1;
             }
             
-            error_log_file_ = real_tokens[1];
+            log_file_ = real_tokens[1];
 
-        } else if (strcmp(real_tokens[0], "db_directory") == 0) {
+        } 
+        else if (strcmp(real_tokens[0], "db_directory") == 0) {
 
             if (real_line_num != 2) {
                 fprintf(stderr, "config file para error\n");
@@ -143,7 +144,8 @@ int Config::LoadConfigFromStr(char *str)
             
             db_directory_ = real_tokens[1];
 
-        } else {
+        }
+        else {
             fprintf(stderr, "config read error: %s\n", strerror(errno));
             return -1;
         }

@@ -23,7 +23,7 @@ class Acceptor {
         
         int fd() const;
     
-        int SetNonBlock();
+        int SetNonBlock(); //if uses, after listen() call it 
         void SetReuseAddr(); 
 
     private:

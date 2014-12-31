@@ -20,6 +20,8 @@
 namespace ldb {
 namespace dbserver {
 
+ldb::util::Log *log;
+
 Server::Server()
 {
 }
@@ -31,7 +33,10 @@ Server::~Server()
 int Server::Insert(const std::string& key, const std::string& value)
 {
     leveldb::Status status;
-    status = db_->Put(write_options_, key, value);
+    leveldb::Slice slicek(key);
+    leveldb::Slice slicev(value);
+
+    status = db_->Put(write_options_, slicek, slicev);
     if (status.ok())
         return 0;
     else 
@@ -41,7 +46,8 @@ int Server::Insert(const std::string& key, const std::string& value)
 int Server::Get(const std::string& key, std::string* value)
 {
     leveldb::Status status;
-    status = db_->Get(read_options_, key, value);
+    leveldb::Slice slicek(key);
+    status = db_->Get(read_options_, slicek, value);
     if (status.ok())
         return 0;
     else 
@@ -51,7 +57,8 @@ int Server::Get(const std::string& key, std::string* value)
 int Server::Delete(const std::string& key)
 {
     leveldb::Status status;
-    status = db_->Delete(write_options_, key);
+    leveldb::Slice slicek(key);
+    status = db_->Delete(write_options_, slicek);
     if (status.ok())
         return 0;
     else 
@@ -138,17 +145,7 @@ int Server::Run(const char *config_file)
         return -1;
     }
 
-    int fd_info = open(config_.info_log_file_.c_str(), O_RDWR | O_CREAT | O_APPEND,
-            S_IRUSR | S_IWUSR);
-
-    std::string info_log_path = config_.info_log_file_;
-    //info_log = new Log(fd_info, info_log_path, false);
-
-    int fd_error = open(config_.error_log_file_.c_str(), O_RDWR | O_CREAT | O_APPEND,
-            S_IRUSR | S_IWUSR);
-
-    std::string error_log_path = config_.error_log_file_;
-    //error_log = new Log(fd_error, error_log_path, false);
+    log = new ldb::util::Log(config_.log_file_, config_.level_);
 
     options_.create_if_missing = true;
     leveldb::Status status 
@@ -156,7 +153,6 @@ int Server::Run(const char *config_file)
     assert(status.ok());
 
     CreateComTable();                                          
-
 
     int backlog = 512;
     int rc = acceptor_.Listen("0.0.0.0", config_.server_port_, backlog);
@@ -166,10 +162,10 @@ int Server::Run(const char *config_file)
     //must be after listen
     acceptor_.SetNonBlock();
 
-    event_.AddReadEvent(acceptor_.fd());
+    event_.AddEvent(acceptor_.fd(), ldb::event::Event::E_EPOLLIN);
 
     if ( config_.daemon_ )  {
-        ldb::util::daemon();
+        ldb::util::Daemon();
     }
 
     return 0;

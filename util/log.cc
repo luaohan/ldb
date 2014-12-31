@@ -10,49 +10,66 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <string.h>
+#include <assert.h>
 
 #include "log.h"
+
+//Log *log = NULL;
 
 namespace ldb {
 namespace util {
 
-Log *info_log = NULL;
-Log *error_log = NULL;
 
-Log::Log(int fd, std::string logfile_path, bool is_thread_safe):
-    fd_(fd), logfile_path_(logfile_path), 
-    is_thread_safe_(is_thread_safe), mutex_(NULL), current_size_(0)
+Log::Log(std::string logfile_path, int level, int rotate_size):
+    fd_(-1), logfile_path_(logfile_path), level_(level),
+    current_size_(0), rotate_size_(rotate_size)
 {
-    if(is_thread_safe_) {
-        ThreadSafe();
+    if (rotate_size_ < 1024 * 1024 * 10) {
+        rotate_size_ = 1024 * 1024 * 10; //10M
     }
+    
+    fd_ = open(logfile_path_.c_str(), O_RDWR | O_CREAT | O_APPEND);
 }
 
 Log::~Log()
 {
-    if(mutex_){
-        pthread_mutex_destroy(mutex_);
-        free(mutex_);
-    }
-    
     Close();
 }
 
 void Log::Close()
 {
-    if (fd_ > 0) close(fd_);
-    fd_ = -1;
+    if (fd_ > 0) {
+        close(fd_);
+        fd_ = -1;
+    }
 }
 
-void Log::ThreadSafe()
+const char *Log::LevelString(int level)
 {
-    mutex_ = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(mutex_, NULL);
+    assert(level >= 0 && level <= 4);
+
+    switch(level){
+        case 0:
+            return "[FATAL] ";
+        case 1:
+            return "[ERROR] ";
+        case 2:
+            return "[WARN ] ";
+        case 3:
+            return "[INFO ] ";
+        case 4:
+            return "[DEBUG] ";
+    }
+    
+    return "";
 }
 
-
-int Log::Write(const char *fmt, va_list ap)
+int Log::Write(int level, const char *fmt, va_list ap)
 {
+    if (level_ < level) {
+        return 0;
+    }
+    
     char buf[2048];
     int len;
     char *ptr = buf;
@@ -72,6 +89,9 @@ int Log::Write(const char *fmt, va_list ap)
     }
     ptr += len;
 
+    memcpy(ptr, LevelString(level), 8);
+    ptr += 8;
+
     int space = sizeof(buf) - (ptr - buf) - 10;
     len = vsnprintf(ptr, space, fmt, ap);
     if(len < 0){
@@ -82,10 +102,6 @@ int Log::Write(const char *fmt, va_list ap)
     *ptr = '\0';
 
     len = ptr - buf;
-   
-    if(mutex_){
-        pthread_mutex_lock(mutex_);
-    }
 
     if (write(fd_, buf, len) < 0) {
         //error
@@ -94,14 +110,10 @@ int Log::Write(const char *fmt, va_list ap)
 
     current_size_ += len;
     if (current_size_ > rotate_size_) {
-       if (Rotate() < 0) {
-           return -1;
-           //error
-       }
-    }
-
-    if(mutex_){
-        pthread_mutex_unlock(mutex_);
+        if (Rotate() < 0) {
+            return -1;
+            //error
+        }
     }
 
     return len;
@@ -110,7 +122,7 @@ int Log::Write(const char *fmt, va_list ap)
 int Log::Rotate()
 {
     Close();
-    
+
     char newpath[1024];
     time_t time;
     struct timeval tv;
@@ -118,10 +130,10 @@ int Log::Rotate()
     gettimeofday(&tv, NULL);
     time = tv.tv_sec;
     tm = localtime(&time);
-    sprintf(newpath, "%s.%04d%02d%02d-%02d%02d%02d",
+    sprintf(newpath, "%s.%04d%02d%02d-%02d%02d%02d-%03d",
             logfile_path_.c_str(),
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-            tm->tm_hour, tm->tm_min, tm->tm_sec);
+            tm->tm_hour, tm->tm_min, tm->tm_sec, (int)(tv.tv_usec/1000));
 
     int ret = rename(logfile_path_.c_str(), newpath);
     if (ret == -1) {
@@ -138,10 +150,10 @@ int Log::Rotate()
     return 0;
 }
 
-int Log::LogWrite(const char *fmt, ...){
+int Log::LogWrite(int level, const char *fmt, ...){
     va_list ap;
     va_start(ap, fmt);
-    int ret = Write(fmt, ap);
+    int ret = Write(level, fmt, ap);
     if (ret < 0) {
         return -1;
     }

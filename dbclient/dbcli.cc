@@ -81,7 +81,7 @@ int Client::Del(const std::string &key)
 {
     const char *s_key = key.c_str();
     
-    /*get key*/
+    /*del key*/
     int len = strlen("del") + 1 + key.size();
     char buffer[len + 1];
     memcpy(buffer, "del ", 3 + 1);
@@ -102,8 +102,6 @@ int Client::Del(const std::string &key)
     }
 
     replay[ret] = '\0';
-
-    printf(">>>:%s\n", replay);
 
     return 0;
 }

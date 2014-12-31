@@ -6,7 +6,6 @@
 
 #include <string>
 #include <stdarg.h>
-#include <pthread.h>
 
 namespace ldb {
 namespace util {
@@ -14,32 +13,51 @@ namespace util {
 class Log {
 
     public:
-        Log(int fd, std::string logfile_path, bool is_thread_safe);
+        Log(std::string logfile_path, int level, int rotate_size = 1024 * 1024 * 10);
         ~Log();
 
-        int LogWrite(const char *fmt, ...);
+        int LogWrite(int level, const char *fmt, ...);
         void Close();
 
+    public:
+        static const int LEVEL_FATAL = 0;
+        static const int LEVEL_ERROR = 1;
+        static const int LEVEL_WARN = 2;
+        static const int LEVEL_INFO = 3;
+        static const int LEVEL_DEBUG = 4;
+
     private:
-        int Write(const char *fmt, va_list ap);
-        void ThreadSafe();
+        int Write(int level, const char *fmt, va_list ap);
         int Rotate();
+        const char *LevelString(int level);
 
     private:
-
         int fd_;
         std::string logfile_path_;
-        
-        bool is_thread_safe_;
-        pthread_mutex_t *mutex_;
-        
+
+        int level_;
         int current_size_;
 
-        static const int rotate_size_ = 1024 * 1024 * 10;// 10M
+        int rotate_size_ ;
 };
 
-#define log_info(fmt, args...) if (info_log != NULL) info_log->LogWrite(fmt, ##args)
-#define log_error(fmt, args...) if (error_log != NULL) error_log->LogWrite(fmt, ##args)
+extern Log *log;
+
+#define log_fatal(fmt, args...) if (log != NULL) \
+    log->LogWrite(0, "%s(%d)",  fmt, __FILE__, __LINE__,  ##args)
+
+#define log_error(fmt, args...) if (log != NULL) \
+    log->LogWrite(1, "%s(%d)",  fmt, __FILE__, __LINE__,  ##args)
+
+#define log_warn(fmt, args...) if (log != NULL) \
+    log->LogWrite(2, "%s(%d)",  fmt, __FILE__, __LINE__,  ##args)
+
+#define log_info(fmt, args...) if (log != NULL) \
+    log->LogWrite(3, "%s(%d)",  fmt, __FILE__, __LINE__,  ##args)
+
+#define log_debug(fmt, args...) if (log != NULL) \
+    log->LogWrite(4, "%s(%d)",  fmt, __FILE__, __LINE__,  ##args)
+
 
 } /*namespace util*/
 } /*namespace ldb*/

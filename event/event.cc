@@ -26,11 +26,11 @@ Event::~Event()
     if (events_ != NULL ) free(events_);
 }
 
-int Event::AddReadEvent(int fd)
+int Event::AddEvent(int fd, int mark)
 {
     struct epoll_event ee;
     ee.data.fd = fd;
-    ee.events = EPOLLIN;
+    ee.events = mark;
 
     int ret = epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ee);
     if (ret == -1) {
@@ -40,11 +40,11 @@ int Event::AddReadEvent(int fd)
     return 0;
 }
 
-int Event::DelReadEvent(int fd)
+int Event::DelEvent(int fd, int mark)
 {
     struct epoll_event ee;
     ee.data.fd = fd;
-    ee.events = EPOLLIN;
+    ee.events = mark;
 
     int ret = epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &ee);
     if (ret == -1) {
@@ -54,7 +54,7 @@ int Event::DelReadEvent(int fd)
     return 0;
 }
 
-int Event::WaitReadEvent(int *fired_fd, int time_out)
+int Event::WaitEvent(int *fired_fd, int time_out)
 {
     int n = epoll_wait(epfd_, events_, max_connections_, time_out);
     if (n < 0) {
@@ -63,7 +63,7 @@ int Event::WaitReadEvent(int *fired_fd, int time_out)
 
     for (int i = 0; i < n; i++)
     {
-        if(events_[i].events & EPOLLIN) {
+        if(events_[i].events & EPOLLIN || events_[i].events & EPOLLOUT) {
 
             fired_fd[i] = events_[i].data.fd;
         } 
