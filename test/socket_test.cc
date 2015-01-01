@@ -6,10 +6,14 @@
 
 int main()
 {
-    Socket server;
-    server.Connect("127.0.0.1", 8899);
-
-    printf("client: fd = %d, port = %d, ip = %s", server.getFd(), server.getPort(), server.getIp());
+    ldb::event::Loop loop;
+    Socket c(&loop);
+    c.Connect("127.0.0.1", 8899);
+    bool ret = loop.Run();
+    if (!ret) {
+        //LOG(ERROR);
+        return -1;
+    }
 
     return 0;
 }

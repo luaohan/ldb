@@ -10,13 +10,15 @@
 #include <netinet/tcp.h>
 #include <string>
 
+#include <event/event.h>
+
 namespace ldb {
 namespace net {
 
 class Socket {
 public:
-    Socket();
-    Socket(int fd, const std::string &ip, int port);
+    Socket(ldb::event::Loop *loop);
+    Socket(int fd, const std::string &ip, int port, ldb::event::Loop *loop);
     ~Socket();
 
     void Close();
@@ -47,6 +49,11 @@ private:
     int fd_;
     std::string ip_;
     int port_;
+    ldb::event::Loop *loop_;
+    ldb::event::Event event_;
+
+    static void Notify(int fd, int events, void *arg);
+    void Process(int fd, int events);
 
 private:
     //No copying allowed

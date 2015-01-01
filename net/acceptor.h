@@ -6,6 +6,8 @@
 
 #include <string>
 
+#include <event/event.h>
+
 namespace ldb {
 namespace net {
 
@@ -14,7 +16,7 @@ class Socket;
 class Acceptor {
 
     public:
-        Acceptor();
+        Acceptor(ldb::event::Loop *loop);
         ~Acceptor();
 
         int Listen(const std::string &ip, int port, int backlog);
@@ -32,9 +34,15 @@ class Acceptor {
         int port_;
         int backlog_;
 
+        ldb::event::Loop *loop_;
+        ldb::event::Event event_;
+
     private:
         Acceptor(const Acceptor &);
         void operator=(const Acceptor &);
+
+        static void Notify(int fd, int events, void *arg);
+        void Process(int fd, int events);
 };
 
 } /*namespace ldb*/

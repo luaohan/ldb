@@ -17,14 +17,33 @@
 namespace ldb {
 namespace net {
 
-Acceptor::Acceptor(): 
-    fd_(-1), port_(-1), backlog_(-1)
+void Acceptor::Notify(int fd, int events, void *arg)
+{
+    Acceptor *a = (Acceptor *)arg;
+    a->Process(fd, events);
+}
+
+Acceptor::Acceptor(ldb::event::Loop *loop): 
+    fd_(-1), port_(-1), backlog_(-1), loop_(loop)
 {
 }
 
 Acceptor::~Acceptor()
 {
     Close();
+}
+
+void Acceptor::Process(int fd, int events)
+{
+    if (events & EPOLLIN) {
+        //process read event
+        //call Accept();
+    }
+    
+    if (events & EPOLLOUT) {
+        //process write event
+        //nothing to do for listen socket
+    }
 }
 
 int Acceptor::fd() const
@@ -89,6 +108,12 @@ int Acceptor::Listen(const std::string &ip, int port, int backlog)
     ip_ = ip;
     port_ = port;
 
+    event_.fd = fd_;
+    event_.read = true;
+    event_.write = false;
+    event_.notify = Acceptor::Notify;
+    event_.arg = (void *)this;
+
     return 0;
 }
 
@@ -96,6 +121,11 @@ int Acceptor::Listen(const std::string &ip, int port, int backlog)
 void Acceptor::Close()
 {
     if (fd_ > 0)  {
+        //note
+        if (!loop_->Del(event_)) {
+            //LOG(ERROR)
+        }
+
         close(fd_);
         fd_ = -1;
     }
@@ -129,7 +159,7 @@ ReAccept:
         return NULL;  
     }
 
-    Socket *socket = new Socket(fd, inet_ntoa(remote.sin_addr), ntohs(remote.sin_port));
+    Socket *socket = new Socket(fd, inet_ntoa(remote.sin_addr), ntohs(remote.sin_port), loop_);
     if (socket == NULL) {
         //LOG(ERROR)
         abort();

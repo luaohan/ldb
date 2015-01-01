@@ -5,71 +5,100 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "event.h"
 
 namespace ldb {
 namespace event {
 
-Event::Event()
+Loop::Loop() : quit_(false)
 {
-    epfd_ = epoll_create(max_connections_);
-
-    events_ 
-        = (struct epoll_event *)malloc( sizeof(struct epoll_event) * max_connections_ );
-
+    epfd_ = epoll_create(event_size);
+    assert(epfd_ != -1);
 }
 
-Event::~Event()
+Loop::~Loop()
 {
-    if (epfd_ > 0) close(epfd_);
-    if (events_ != NULL ) free(events_);
+    if (epfd_ != -1) {
+        close(epfd_);
+    }
 }
 
-int Event::AddEvent(int fd, int mark)
+bool Loop::Add(const Event &e)
+{
+    assert(e.fd >= 0);
+    assert(e.read || e.write);
+    //assert(e->arg != NULL);
+
+    struct epoll_event ee;
+    ee.data.fd = e.fd;
+    int events = 0;
+    if (e.read) {
+        events |= EPOLLIN;
+    }
+    if (e.write) {
+        events |= EPOLLOUT;
+    }
+    ee.events = events;
+    ee.data.ptr = (void *)(const_cast<Event *>(&e));
+
+    int ret = epoll_ctl(epfd_, EPOLL_CTL_ADD, e.fd, &ee);
+    if (ret == -1) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Loop::Del(const Event &e)
 {
     struct epoll_event ee;
-    ee.data.fd = fd;
-    ee.events = mark;
+    ee.data.fd = e.fd;
+    ee.events = EPOLLIN | EPOLLOUT;
 
-    int ret = epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ee);
+    int ret = epoll_ctl(epfd_, EPOLL_CTL_DEL, e.fd, &ee);
     if (ret == -1) {
-        return -1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
-int Event::DelEvent(int fd, int mark)
+bool Loop::Run()
 {
-    struct epoll_event ee;
-    ee.data.fd = fd;
-    ee.events = mark;
+    quit_ = false;
 
-    int ret = epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &ee);
-    if (ret == -1) {
-        return -1;
+    struct epoll_event *events
+        = (struct epoll_event *)malloc( sizeof(struct epoll_event) * event_size);
+    if (events == NULL) {
+        assert(events != NULL);
+        return false;
     }
 
-    return 0;
+    do {
+        int n = epoll_wait(epfd_, events, event_size, -1);
+        if (n <= 0) {
+            break;
+        }
+
+        for (int i = 0; i < n; i++) {
+            Event *e = (Event *)events[i].data.ptr;
+            assert(e->fd == events[i].data.fd);
+            e->notify(e->fd, events[i].events, e->arg);
+        }
+    } while (!quit_);
+
+    return true;
 }
 
-int Event::WaitEvent(int *fired_fd, int time_out)
+void Loop::Stop()
 {
-    int n = epoll_wait(epfd_, events_, max_connections_, time_out);
-    if (n < 0) {
-        return -1;
+    quit_ = true;
+    //pipe is a better method
+    if (epfd_ != -1) {
+        close(epfd_);
     }
-
-    for (int i = 0; i < n; i++)
-    {
-        if(events_[i].events & EPOLLIN || events_[i].events & EPOLLOUT) {
-
-            fired_fd[i] = events_[i].data.fd;
-        } 
-    }
-
-    return n;
 }
 
 } /*namespace ldb*/

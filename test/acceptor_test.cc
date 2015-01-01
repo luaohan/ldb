@@ -6,12 +6,11 @@
 
 int main()
 {
-    Acceptor server(true);
+    ldb::event::Loop loop;
+    Acceptor server(&loop);
     server.Listen("0.0.0.0", 8899, 5);
 
-    Acceptor *client = server.Accept();
-
-    printf("client: fd = %d, port = %d, ip = %s", client->getFd(), client->getPort(), client->getIp());
+    loop.Run();
 
     return 0;
 }

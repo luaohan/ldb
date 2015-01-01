@@ -9,28 +9,37 @@
 namespace ldb {
 namespace event {
 
-class Event {
+typedef void (*Notify)(int fd, int events, void *arg);
 
-    public:
-        Event();
-        ~Event();
+struct Event {
+    Event() : fd(-1), read(false), write(false), arg(NULL) {}
+    //explicit Event(int fd, bool read, bool write, Notify notify, void *arg)
+    //    : fd(fd), read(read), write(write), notify(notify), arg(arg) {}
 
-        int AddEvent(int fd, int mark);
-        int DelEvent(int fd, int mark);
+    int fd;
+    bool read;
+    bool write;
+    Notify notify;
+    void *arg;
+};
 
-        //ok: return the num of the events 
-        //error: return -1
-        int WaitEvent(int *fired_fd, int time_out = -1);
+class Loop {
+public:
+    Loop();
+    ~Loop();
 
-        static const int E_EPOLLIN = EPOLLIN;
-        static const int E_EPOLLOUT = EPOLLOUT;
+    enum {
+        event_size = 1024
+    };
 
+    bool Add(const Event &e);
+    bool Del(const Event &e);
+    bool Run();
+    void Stop();
 
-    private:
-        int epfd_;
-
-        static const int max_connections_ = 1024;
-        struct epoll_event *events_;
+private:
+    int epfd_;
+    bool quit_;
 };
 
 } /*namespace ldb*/

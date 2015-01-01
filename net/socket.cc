@@ -11,13 +11,19 @@
 namespace ldb {
 namespace net {
 
-Socket::Socket(): 
-    fd_(-1), port_(-1)
+void Socket::Notify(int fd, int events, void *arg)
+{
+    Socket *s = (Socket *)arg;
+    s->Process(fd, events);
+}
+
+Socket::Socket(ldb::event::Loop *loop): 
+    fd_(-1), port_(-1), loop_(loop)
 {
 }
 
-Socket::Socket(int fd, const std::string &ip, int port)
-    : fd_(fd), ip_(ip), port_(port)
+Socket::Socket(int fd, const std::string &ip, int port, ldb::event::Loop *loop)
+    : fd_(fd), ip_(ip), port_(port), loop_(loop)
 {
 }
 
@@ -26,9 +32,28 @@ Socket::~Socket()
     Close();
 }
 
+void Socket::Process(int fd, int events)
+{
+    assert(fd == fd_);
+
+    if (events & EPOLLIN) {
+        //ReadData();
+    }
+    
+    if (events & EPOLLOUT) {
+        //WriteData()
+    } 
+}
+
 void Socket::Close() 
 {
     if (fd_ > 0) {
+
+        //note
+        if (!loop_->Del(event_)) {
+            //LOG(ERROR);
+        }
+
         close(fd_);
         fd_ = -1;
     }
@@ -64,21 +89,33 @@ int Socket::Connect(const char *ip, int port)
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip);
     addr.sin_port = htons(port);
+    //block or nonlock?
     result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
     if ( result != 0 ) {
-        Close();
         return -1;
     }
     
     ip_ == ip;
     port_ = port;
 
+    event_.fd = fd_;
+    event_.read = true;
+    event_.write = false;
+    event_.notify = Socket::Notify;
+    event_.arg = (void *)this;
+
+    if (!loop_->Add(event_)) {
+        Close();
+        return -1;
+    }
+
     return 0;
 }
 
 void Socket::SetReuseAddr()
 {
-    int on = 1;                          
+    int on = 1;
+    //return code is ok???
     setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
 }
 
