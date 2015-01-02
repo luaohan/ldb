@@ -17,6 +17,8 @@
 namespace ldb {
 namespace net {
 
+typedef void (*ConnectNotify)(const Socket *socket);
+
 void Acceptor::Notify(int fd, int events, void *arg)
 {
     Acceptor *a = (Acceptor *)arg;
@@ -35,15 +37,20 @@ Acceptor::~Acceptor()
 
 void Acceptor::Process(int fd, int events)
 {
+    assert(handler_ != NULL);
+
     if (events & EPOLLIN) {
         //process read event
-        //call Accept();
+        Socket *s = Accept();
+        if (s != NULL) {
+            handler_(owner_, s);
+        }
     }
     
-    if (events & EPOLLOUT) {
-        //process write event
-        //nothing to do for listen socket
-    }
+    //if (events & EPOLLOUT) {
+    //    //process write event
+    //    //nothing to do for listen socket
+    //}
 }
 
 int Acceptor::fd() const
@@ -70,7 +77,7 @@ int Acceptor::SetNonBlock()
     return 0;
 }
 
-int Acceptor::Listen(const std::string &ip, int port, int backlog)
+bool Acceptor::Listen(const std::string &ip, int port, int backlog)
 {
     assert(backlog > 0);
     assert(port > 1000 && port < 65535);
@@ -78,7 +85,7 @@ int Acceptor::Listen(const std::string &ip, int port, int backlog)
     fd_ = socket(AF_INET, SOCK_STREAM, 0);
     if (fd_ == -1) {
         //LOG(ERROR)
-        return -1;
+        return false;
     }
 
     struct sockaddr_in addr;
@@ -95,13 +102,13 @@ int Acceptor::Listen(const std::string &ip, int port, int backlog)
         //LOG(ERROR)
         close(fd_);
         fd_ = -1;
-        return -1;
+        return false;
     }
     
     if (listen(fd_, backlog_) == -1 ) {
         //LOG(ERROR)
         Close();
-        return -1;
+        return false;
     }
 
     backlog_ = backlog;
@@ -114,7 +121,9 @@ int Acceptor::Listen(const std::string &ip, int port, int backlog)
     event_.notify = Acceptor::Notify;
     event_.arg = (void *)this;
 
-    return 0;
+    loop_->Add(event_);
+
+    return true;
 }
 
 
@@ -176,6 +185,15 @@ void Acceptor::SetReuseAddr()
     //if (rc == -1) {
     //    //LOG(ERROr)
     //}
+}
+
+void Acceptor::SetHandler(void *owner, Handler handler)
+{
+    assert(owner != NULL);
+    assert(handler != NULL);
+
+    owner_ = owner;
+    handler_ = handler;
 }
 
 } /*namespace ldb*/

@@ -8,10 +8,10 @@
 ###############################################################################
 
 CROSS_COMPILE =
-OPTIMIZE := -O2
+OPTIMIZE := -O0
 WARNINGS := -Wall -Wno-unused -Wno-format
 DEFS     := 
-EXTRA_CFLAGS := 
+EXTRA_CFLAGS := -g
 
 INC_DIR   = ../
 SRC_DIR   = 

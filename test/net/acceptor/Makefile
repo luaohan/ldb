@@ -12,18 +12,19 @@ OPTIMIZE := -O0
 WARNINGS := -Wall -Wno-unused -Wno-format
 DEFS     := 
 EXTRA_CFLAGS := -g
+LDFLAGS := -L../../../event -L../../../net -lldbevent -lldbnet -Wl,-rpath=../../../event/ -Wl,-rpath=../../../net/
 
-INC_DIR   =  ../
+INC_DIR   = ../../../
 SRC_DIR   = 
 OBJ_DIR   = 
 EXTRA_SRC = 
 EXCLUDE_FILES = 
 
 SUFFIX       = c cpp cc cxx
-TARGET       := libldbevent.so
+TARGET       := server
 #TARGET_TYPE  := ar
-#TARGET_TYPE  := app
-TARGET_TYPE  := so
+TARGET_TYPE  := app
+#TARGET_TYPE  := so
 
 
 #####################################################################################

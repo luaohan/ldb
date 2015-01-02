@@ -25,6 +25,15 @@ Socket::Socket(ldb::event::Loop *loop):
 Socket::Socket(int fd, const std::string &ip, int port, ldb::event::Loop *loop)
     : fd_(fd), ip_(ip), port_(port), loop_(loop)
 {
+    event_.fd = fd_;
+    event_.read = true;
+    event_.write = false;
+    event_.notify = Socket::Notify;
+    event_.arg = (void *)this;
+
+    if (!loop_->Add(event_)) {
+        Close();
+    }
 }
 
 Socket::~Socket()
@@ -34,14 +43,15 @@ Socket::~Socket()
 
 void Socket::Process(int fd, int events)
 {
+    assert(handler_ != NULL);
     assert(fd == fd_);
 
     if (events & EPOLLIN) {
-        //ReadData();
+        handler_(owner_, kRead);
     }
     
     if (events & EPOLLOUT) {
-        //WriteData()
+        handler_(owner_, kWrite);
     } 
 }
 
@@ -74,7 +84,7 @@ int Socket::SetNoblock()
     return 0;
 }
 
-int Socket::Connect(const char *ip, int port)
+bool Socket::Connect(const char *ip, int port)
 {
     struct sockaddr_in addr;
     int result;
@@ -83,7 +93,7 @@ int Socket::Connect(const char *ip, int port)
     fd_ = socket( AF_INET, SOCK_STREAM, 0 );
     if (fd_ == -1) {
         //LOG(ERROR)
-        return -1;
+        return false;
     }
 
     addr.sin_family = AF_INET;
@@ -92,7 +102,7 @@ int Socket::Connect(const char *ip, int port)
     //block or nonlock?
     result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
     if ( result != 0 ) {
-        return -1;
+        return false;
     }
     
     ip_ == ip;
@@ -106,10 +116,10 @@ int Socket::Connect(const char *ip, int port)
 
     if (!loop_->Add(event_)) {
         Close();
-        return -1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
 void Socket::SetReuseAddr()
@@ -156,55 +166,44 @@ void Socket::SetNoNagle()
     return;
 }
 
-int Socket::ReadData(char *buffer, int buffer_size)
+int Socket::Read(char *buffer, int buffer_size)
 {
-    int ret = 0;
-    int want = buffer_size;
-    while (want  > 0) {
-        int len = read(fd_, buffer, want);
-        if (len == -1) {
-            if(errno == EINTR){
-
-                continue;
-            }
-
-            return -1;
-        } 
-
-        if (len == 0) {
-            return 0;
+RETRY_READ:
+    int bytes = read(fd_, buffer, buffer_size);
+    if (bytes == -1) {
+        if (errno == EINTR) {
+            goto RETRY_READ;
         }
 
-        ret += len;
-        buffer += len;
-        want -= len;
+        return -1;
     }
 
-    return ret;
+    return bytes;
 }
 
-int Socket::WriteData(char *buffer, int buffer_size)
+int Socket::Write(char *buffer, int buffer_size)
 {
-    int ret = 0;
-    int want = buffer_size;
-    while ( want > 0 ) {
-        int len = write(fd_, buffer, want);
-        if (len == -1) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            return -1;
+RETRY_WRITE:
+    int bytes = write(fd_, buffer, buffer_size);
+    if (bytes == -1) {
+        if (errno == EINTR) {
+            goto RETRY_WRITE;
         }
 
-        ret += len;
-        buffer += len;
-        want -= len;
+        return -1;
     }
 
-    return ret;
+    return bytes;
 }
 
+void Socket::SetHandler(void *owner, Handler handler)
+{
+    assert(owner != NULL);
+    assert(handler != NULL);
+
+    owner_ = owner;
+    handler_ = handler;
+}
 
 } /*namespace ldb*/
 } /*namespace net*/

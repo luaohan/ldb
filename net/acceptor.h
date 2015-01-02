@@ -19,7 +19,9 @@ class Acceptor {
         Acceptor(ldb::event::Loop *loop);
         ~Acceptor();
 
-        int Listen(const std::string &ip, int port, int backlog);
+        typedef void (*Handler)(void *owner, Socket *s);
+
+        bool Listen(const std::string &ip, int port, int backlog);
         Socket *Accept();
         void Close();
         
@@ -27,6 +29,8 @@ class Acceptor {
     
         int SetNonBlock(); //if uses, after listen() call it 
         void SetReuseAddr(); 
+
+        void SetHandler(void *owner, Handler handler);
 
     private:
         int fd_;
@@ -36,6 +40,9 @@ class Acceptor {
 
         ldb::event::Loop *loop_;
         ldb::event::Event event_;
+
+        void *owner_;
+        Handler handler_;
 
     private:
         Acceptor(const Acceptor &);

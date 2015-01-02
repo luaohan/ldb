@@ -21,10 +21,17 @@ public:
     Socket(int fd, const std::string &ip, int port, ldb::event::Loop *loop);
     ~Socket();
 
+    enum {
+        kRead = 0,
+        kWrite = 1
+    };
+
+    typedef void (*Handler)(void *owner, int event);
+
     void Close();
     //ok: return 0
     //error: return -1
-    int Connect(const char *ip, int port);
+    bool Connect(const char *ip, int port);
 
     int fd() const { return fd_; }
     int port() const { return port_; }
@@ -42,8 +49,15 @@ public:
     //ok: return the size of read
     //error: return -1
     //a client exit: return 0
-    int ReadData(char *buffer, int buffer_size);
-    int WriteData(char *buffer, int buffer_size);
+
+    int Read(char *buffer, int buffer_size);
+    int Write(char *buffer, int buffer_size);
+
+    void SetHandler(void *owner, Handler handler);
+
+private:
+    static void Notify(int fd, int events, void *arg);
+    void Process(int fd, int events);
 
 private:
     int fd_;
@@ -52,8 +66,8 @@ private:
     ldb::event::Loop *loop_;
     ldb::event::Event event_;
 
-    static void Notify(int fd, int events, void *arg);
-    void Process(int fd, int events);
+    void *owner_;
+    Handler handler_;
 
 private:
     //No copying allowed

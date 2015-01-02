@@ -84,10 +84,12 @@ bool Loop::Run()
 
         for (int i = 0; i < n; i++) {
             Event *e = (Event *)events[i].data.ptr;
-            assert(e->fd == events[i].data.fd);
+            //assert(e->fd == events[i].data.fd);
             e->notify(e->fd, events[i].events, e->arg);
         }
     } while (!quit_);
+
+    free(events);
 
     return true;
 }
