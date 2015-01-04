@@ -17,9 +17,9 @@ int main()
         return -1;
     }
 
-#if 0    
     std::string key = "keyaaabbb";
     std::string val = "valaaabbb";
+#if 0    
     std::string val2 = "valaaabbb2";
     std::string val3 = "valaaabbb3";
 
@@ -42,18 +42,16 @@ int main()
     cli.Get(key, &val);
     printf(":%s\n", val.c_str());
 #endif
-    
+#if 0    
     std::string key = "keykey";
     std::string val;
     cli.Get(key, &val);
     printf(":%s\n", val.c_str());
-
-#if 0
+#endif
     for (int i = 0; i < 100000; i++) {
         cli.Set(key, val);
         printf("%d\n", i);
     }
-#endif
 
     return 0;
 }

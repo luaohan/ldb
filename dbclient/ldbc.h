@@ -23,8 +23,8 @@ class Client {
 
         int Get(std::string &key, std::string *value); //获取key 的值，
                                                        //值保存在value 中,
-                                                       //如果存在数据库中存在key
-                                                       //value 将返回key 的真是值
+                                                       //如果数据库中存在key
+                                                       //value 将返回key 的真实值
                                                        //若不存在, value 返回
                                                        //的值将是 "no the key"
 

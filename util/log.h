@@ -14,6 +14,7 @@ class Log {
    
         int LogWrite(int level, const char *fmt, ...);
         void Close();
+        int fd() const {return fd_;}
 
     public:
         static const int LEVEL_FATAL = 0;
@@ -38,19 +39,19 @@ class Log {
 extern Log *log;
 
 #define log_fatal(fmt, args...) if (log != NULL) \
-                                           log->LogWrite(0, "%s(%d)", fmt, __FILE__, __LINE__, ##args)
+            log->LogWrite(0, "%s(%d)" fmt, __FILE__, __LINE__, ##args)
 
 #define log_error(fmt, args...) if (log != NULL) \
-                                           log->LogWrite(1, "%s(%d)", fmt, __FILE__, __LINE__, ##args)
+            log->LogWrite(1, "%s(%d)" fmt, __FILE__, __LINE__, ##args)
 
 #define log_warn(fmt, args...) if (log != NULL) \
-                                          log->LogWrite(2, "%s(%d)", fmt, __FILE__, __LINE__, ##args)
+            log->LogWrite(2, "%s(%d)" fmt, __FILE__, __LINE__, ##args)
 
 #define log_info(fmt, args...) if (log != NULL) \
-                                          log->LogWrite(3, "%s(%d)", fmt, __FILE__, __LINE__, ##args)
+            log->LogWrite(3, "%s(%d)" fmt, __FILE__, __LINE__, ##args)
 
 #define log_debug(fmt, args...) if (log != NULL) \
-                                           log->LogWrite(4, "%s(%d)", fmt, __FILE__, __LINE__, ##args)
+            log->LogWrite(4, "%s(%d)" fmt, __FILE__, __LINE__, ##args)
 
 
 #endif

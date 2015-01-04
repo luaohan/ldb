@@ -10,10 +10,6 @@
 #include "str.h" 
 #include "../util/log.h"
 
-#if 0
-extern Log *info_log;
-extern Log *error_log;
-#endif
 
 int tell_client( Client *client )
 {
@@ -22,7 +18,6 @@ int tell_client( Client *client )
 
 void process_client_info(Server &server, Client *client) 
 {
-    //fprintf(stderr, "client_fd:%d, data:|%s|\n", client->link_->getFd(), client->recv_);
     log_info("ip:[%s], port:[%d], data:[%s]", client->link_->getIp(),
             client->link_->getPort(),client->recv_);
 
@@ -36,7 +31,6 @@ void process_client_info(Server &server, Client *client)
 
         tell_len = tell_client(client);
         if (tell_len < 0) {
-            //fprintf(stderr, "tell_client error:%s\n", strerror(errno));
             log_error("ip:[%s], port:[%d], tell_client error:[%s]",
                     client->link_->getIp(), client->link_->getPort(),
                     strerror(errno));
@@ -50,7 +44,6 @@ void process_client_info(Server &server, Client *client)
     command->proc(&server, client);
     tell_len = tell_client(client);
     if (tell_len < 0) {
-        //fprintf(stderr, "tell_client error:%s\n", strerror(errno));
         log_error("ip:[%s], port:[%d], tell_client error:[%s]", 
                 client->link_->getIp(), client->link_->getPort(), 
                 strerror(errno));
@@ -84,7 +77,6 @@ void process_events(Server &server)
             Client *cli = new Client(link);
             server.AddClient(cli);
 
-            //fprintf(stderr, "create a client:fd:%d \n");
             log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
                     link->getIp(), link->getPort(), link->getFd());
             continue;
@@ -112,7 +104,7 @@ void process_events(Server &server)
             server.DeleteClient(cli->link_->getFd());
             delete cli->link_;
             delete cli;
-            //fprintf(stderr, "a client exit.\n");
+            
             continue;
         }
 

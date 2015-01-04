@@ -16,11 +16,6 @@
 #include "../util/daemon.h"
 #include "../util/log.h"
 
-#if 0
-extern Log *info_log;
-extern Log *error_log;
-#endif
-
 Server::Server()
 {
 }
@@ -139,6 +134,10 @@ int Server::Run(const char *config_file)
 
     
     log = new Log(config_.log_file_, config_.level_, 0);
+    if (log->fd() == -1 ) {
+        fprintf(stderr, "open logfile error: %s\n", strerror(errno));
+        return -1; 
+    }
 
     options_.create_if_missing = true;
     leveldb::Status status 
@@ -150,7 +149,9 @@ int Server::Run(const char *config_file)
     socket_.setNoNagle();
 
     int backlog = 512;
-    socket_.Listen("0.0.0.0", config_.server_port_, backlog);
+    if (socket_.Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
+        return -1;
+    }
 
     socket_.setNoblock();
     

@@ -45,6 +45,9 @@ void ldb_set_command(Server *server, Client *client)
 
     server->Insert(s_key, s_val);
 
+    free(key);
+    free(value);
+
     memcpy(client->replay_, LDB_ADD_OK, strlen(LDB_ADD_OK));
     
     return ;
