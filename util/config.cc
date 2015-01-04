@@ -85,26 +85,27 @@ int Config::LoadConfigFromStr(char *str)
         if (strcmp(real_tokens[0], "daemonize") == 0) {
            
             if (real_line_num != 2) {
-                fprintf(stderr, "config file para error\n");
+                fprintf(stderr, " config file para error\n");
                 return -1;
             }
-       
-            if (strcmp(real_tokens[0], "yes") == 0) {
+            
+
+            if (strcmp(real_tokens[1], "yes") == 0) {
            
                 daemon_ = true;
-            } else if (strcmp(real_tokens[0], "no") == 0) {
+            } else if (strcmp(real_tokens[1], "no") == 0) {
                
                 daemon_ = false;
             } else {
                
-                fprintf(stderr, "config file para error\n");
+                fprintf(stderr, " config file para error \n");
                 return -1;
             }
         } 
         
         else if (strcmp(real_tokens[0], "server_port") == 0) {
             if (real_line_num != 2) {
-                fprintf(stderr, "config file para error\n");
+                fprintf(stderr, " config file para error\n");
                 return -1;
             }
        
@@ -115,7 +116,7 @@ int Config::LoadConfigFromStr(char *str)
         
         else if (strcmp(real_tokens[0], "level") == 0) {
             if (real_line_num != 2) {
-                fprintf(stderr, "config file para error\n");
+                fprintf(stderr, " config file para error\n");
                 return -1;
             }
        
@@ -126,7 +127,7 @@ int Config::LoadConfigFromStr(char *str)
         
         else if (strcmp(real_tokens[0], "logfile") == 0) {
             if (real_line_num != 2) {
-                fprintf(stderr, "config file para error\n");
+                fprintf(stderr, " config file para error\n");
                 return -1;
             }
             
@@ -135,7 +136,7 @@ int Config::LoadConfigFromStr(char *str)
         
         else if (strcmp(real_tokens[0], "db_directory") == 0) {
             if (real_line_num != 2) {
-                fprintf(stderr, "config file para error\n");
+                fprintf(stderr, " config file para error\n");
                 return -1;
             }
         
@@ -143,7 +144,7 @@ int Config::LoadConfigFromStr(char *str)
         } 
         
         else {
-            fprintf(stderr, "config read error: %s\n", strerror(errno));
+            fprintf(stderr, " config read error: %s\n", strerror(errno));
             return -1;
         }
     }

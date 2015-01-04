@@ -9,6 +9,11 @@ ldb
 
 1，本服务器是以 leveldb 作为引擎的，所以首先你的机器上要安装有 leveldb。如果你
 的机器上没有leveldb, 自己必须先下载安装。
+
+    leveldb 的安装方式:
+        下载到leveldb 的源码压缩包后，解压后进入leveldb 的目录，make即可。
+        然后将leveldb 的头文件拷贝到/usr/local/include目录(需要root权限):
+        "sudo cp -r include/leveldb /usr/local/include"
     
     本服务器的源码在编译时必须要有 leveldb 生成的 libleveldb.a 。你成功安装
 leveldb 后就会找到 libleveldb.a，这是leveldb 的库文件，这个文件要放到ldb 目
@@ -17,10 +22,10 @@ leveldb 后就会找到 libleveldb.a，这是leveldb 的库文件，这个文件
 2,  安装服务器:
     
     目前，本服务器只提供使用源码安装的方法，且源代码只在 github 上是提供，
-你可以在你的机器上这样下载源码:"git clone git@github.com:luaohan/ldb.git"，
+你可以在你的机器上这样下载源码:"git clone https://github.com/luaohan/ldb.git"，
 如果你的机器上没有git 程序，请自己安装。
 
-    如果执行命令"git clone git@github.com:luaohan/ldb.git"成功，会在当前
+    如果执行命令"git clone https://github.com/luaohan/ldb.git"成功，会在当前
 目录下生成一个ldb 目录，进入这个目录，执行 make 命令，如果一切顺利，即可生
 成 server 可执行程序。然后运行命令"./server"，即可运行程序。
 
