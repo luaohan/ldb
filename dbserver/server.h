@@ -19,6 +19,8 @@
 class Command;
 class Client;
 
+extern bool quit;
+
 class Server {
 
     public:
@@ -56,9 +58,10 @@ class Server {
         Epoll event_;
         int fired_fd[1024];
 
-        Acceptor socket_;
+        Acceptor *socket_;
 
         Config config_;
+
 };
 
 

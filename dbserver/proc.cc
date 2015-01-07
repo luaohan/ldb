@@ -7,9 +7,10 @@
 #include <errno.h>
 
 #include "proc.h"
-#include "str.h" 
+#include "../util/str.h" 
 #include "../util/log.h"
-
+#include "../net/socket.h"
+#include "../net/acceptor.h"
 
 int tell_client( Client *client )
 {
@@ -27,7 +28,7 @@ void process_client_info(Server &server, Client *client)
     int tell_len;
     Command *command = server.FindCommand(client->argv_[0]);
     if (command == NULL) {
-        memcpy(client->replay_, LDB_NO_THE_COMMAND, strlen(LDB_NO_THE_COMMAND));
+        memcpy(client->replay_, LDB_NO_THE_COMMAND, strlen(LDB_NO_THE_COMMAND) + 1);
 
         tell_len = tell_client(client);
         if (tell_len < 0) {
@@ -63,8 +64,8 @@ void process_events(Server &server)
 
     for (int i = 0; i < n; i++) 
     {
-        if ( server.fired_fd[i] == server.socket_.getFd()) {
-            Acceptor *link = server.socket_.Accept();
+        if ( server.fired_fd[i] == server.socket_->getFd()) {
+            Acceptor *link = server.socket_->Accept();
             if (link == NULL) {
                 log_error("Accept error:[%s]", strerror(errno));
                 continue;
@@ -91,7 +92,6 @@ void process_events(Server &server)
 
             server.event_.delReadEvent(cli->link_->getFd());
             server.DeleteClient(cli->link_->getFd());
-            delete cli->link_;
             delete cli;
             continue;
         }
@@ -102,7 +102,6 @@ void process_events(Server &server)
 
             server.event_.delReadEvent(cli->link_->getFd());
             server.DeleteClient(cli->link_->getFd());
-            delete cli->link_;
             delete cli;
             
             continue;

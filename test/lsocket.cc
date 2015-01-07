@@ -9,7 +9,7 @@
 #include "socket.h"
 
 Socket::Socket(): 
-    fd_(-1), port_(-1), is_noblocked_(false) 
+    fd_(-1), port_(-1), backlog_(-1), is_noblocked_(false) 
 {
     fd_ = socket( AF_INET, SOCK_STREAM, 0 );
     
@@ -18,13 +18,7 @@ Socket::Socket():
 
 Socket::~Socket()
 {
-    Close();
-}
-
-void Socket::Close() 
-{
-    if (fd_ > 0) close(fd_);
-    fd_ = -1;
+    if ( fd_ > 0 ) close(fd_);
 }
 
 int Socket::getFd() const
@@ -32,17 +26,23 @@ int Socket::getFd() const
     return fd_;
 }
 
-int Socket::getPort() const
+
+int Socket::getBacklog()
+{ 
+    return backlog_; 
+}
+
+int Socket::getPort()
 {
     return port_;
 }
 
-char * Socket::getIp() 
+char *Socket::getIp()
 {
     return ip_;
 }
 
-int Socket::SetNoblock()
+int Socket::setNoblock()
 {
     int flags;
 
@@ -59,7 +59,7 @@ int Socket::SetNoblock()
     return 0;
 }
 
-bool Socket::isNoblocked() const
+bool Socket::isNoblocked()
 {
     return is_noblocked_;
 }
@@ -75,7 +75,8 @@ int Socket::Connect(const char *ip, int port)
     addr.sin_port = htons(port);
     result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
     if ( result != 0 ) {
-        Close();
+        close(fd_);
+        fd_ = -1;
         return -1;
     }
     
@@ -85,13 +86,13 @@ int Socket::Connect(const char *ip, int port)
     return 0;
 }
 
-void Socket::SetReuseAddr()
+void Socket::setReuseAddr()
 {
     int on = 1;                          
     setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
 }
 
-void Socket::SetLinger()
+void Socket::setLinger()
 {
     struct linger optval;
     optval.l_onoff = 1;
@@ -99,17 +100,17 @@ void Socket::SetLinger()
     setsockopt(fd_, SOL_SOCKET, SO_LINGER, (char *)&optval, sizeof(struct linger));
 }
 
-void Socket::SetRcvBuf(int size)
+void Socket::setRcvBuf(int size)
 {
     setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, (char *)&size, sizeof(size));
 }
 
-void Socket::SetSndBuf(int size)
+void Socket::setSndBuf(int size)
 {
     setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(size));
 }
 
-void Socket::SetNoNagle()
+void Socket::setNoNagle()
 {
     int opt;
     socklen_t optlen;
@@ -128,66 +129,12 @@ void Socket::SetNoNagle()
     return;
 }
 
-int Socket::ReadData(char *buffer, int buffer_size)
+int Socket::readData(char *buffer, int buffer_size)
 {
-    int ret = 0;
-    int want = buffer_size;
-    while(want  > 0)
-    {
-        int len = read(fd_, buffer, want);
-        if(len == -1){
-            if(errno == EINTR){
-
-                continue;
-            }else if(errno == EWOULDBLOCK || errno == EAGAIN){
-                break;
-            }else{
-                return -1;
-            }
-        }else{
-            if(len == 0){
-                return 0;
-            }
-
-            ret += len;
-            buffer += len;
-            want -= len;
-        }       
-        if( !is_noblocked_ ){
-            break;
-        }
-    }
-
-    return ret;
+    return read(fd_, buffer, buffer_size);
 }
 
-int Socket::WriteData(char *buffer, int buffer_size)
+int Socket::writeData(char *buffer, int buffer_size)
 {
-    int ret = 0;
-    int want = buffer_size;
-    while( want > 0 )
-    {
-        int len = write(fd_, buffer, want);
-        if(len == -1){
-            if(errno == EINTR){
-                continue;
-            }else if(errno == EWOULDBLOCK || errno == EAGAIN){
-                break;
-            }else{
-                return -1;
-            }
-        }else{
-            if(len == 0){
-                break;
-            }
-            ret += len;
-            buffer += len;
-            want -= len;
-        }
-        if(!is_noblocked_){
-            break;
-        }
-    }
-
-    return ret;
+    return write(fd_, buffer, buffer_size);
 }

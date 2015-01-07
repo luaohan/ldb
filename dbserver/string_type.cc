@@ -48,7 +48,7 @@ void ldb_set_command(Server *server, Client *client)
     free(key);
     free(value);
 
-    memcpy(client->replay_, LDB_ADD_OK, strlen(LDB_ADD_OK));
+    memcpy(client->replay_, LDB_ADD_OK, strlen(LDB_ADD_OK) + 1);
     
     return ;
 }
@@ -56,7 +56,7 @@ void ldb_set_command(Server *server, Client *client)
 void ldb_get_command(Server *server, Client *client)
 {
     if (client->argc_ != client->cmd->argc) {
-        memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
+        memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR) + 1);
         return ;
     }
 
@@ -65,9 +65,9 @@ void ldb_get_command(Server *server, Client *client)
 
     int ret = server->Get(s_key, &s_val);
     if (ret == 0) {
-        memcpy(client->replay_, s_val.c_str(), s_val.size());
+        memcpy(client->replay_, s_val.c_str(), s_val.size() + 1);
     } else {
-        memcpy(client->replay_, LDB_NO_THE_KEY, strlen(LDB_NO_THE_KEY));
+        memcpy(client->replay_, LDB_NO_THE_KEY, strlen(LDB_NO_THE_KEY) + 1);
     }
     
     return ;
@@ -121,7 +121,7 @@ void ldb_update_command(Server *server, Client *client)
 void ldb_del_command(Server *server, Client *client)
 {
     if (client->argc_ != client->cmd->argc) {
-        memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
+        memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR) + 1);
         return ;
     }
   
@@ -130,9 +130,9 @@ void ldb_del_command(Server *server, Client *client)
 
     int ret = server->Delete(s_key);
     if (ret == 0) {
-        memcpy(client->replay_, LDB_DEL_OK, strlen(LDB_DEL_OK));
+        memcpy(client->replay_, LDB_DEL_OK, strlen(LDB_DEL_OK) + 1);
     } else {
-        memcpy(client->replay_, LDB_NO_THE_KEY, strlen(LDB_NO_THE_KEY));
+        memcpy(client->replay_, LDB_NO_THE_KEY, strlen(LDB_NO_THE_KEY) + 1);
     }
     
     return ;

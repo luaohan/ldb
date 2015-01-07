@@ -12,8 +12,7 @@
 #include <fcntl.h>
 
 #include "config.h"
-#include "../dbserver/str.h"
-//#include "server.h"
+#include "str.h"
 
 #define LDB_CONFIG_BUF_SIZE 4096
 
@@ -52,7 +51,9 @@ read_again:
             fprintf(stderr, "config read error: %s\n", strerror(errno));
             return -1;
         }
-   
+        
+        buf[read_len] = '\0';
+
         strcpy(str, buf);
        
         if (read_len < LDB_CONFIG_BUF_SIZE)

@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
 #include "server.h"
 #include "proc.h"
 #include "../util/log.h"
@@ -16,10 +17,10 @@ int main(int argc, char **argv)
     if (server.Run("ldb.conf") < 0) {
         return -1;
     }
-    
+
     fprintf(stderr, "init server success\n");
 
-    while (true) {
+    while (!quit) {
         process_events(server);
     }
 

@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "socket.h"
+#include "../net/socket.h"
 
 class Client {
 

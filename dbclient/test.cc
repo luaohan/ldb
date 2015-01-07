@@ -5,6 +5,7 @@
 #include <string>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include "ldbc.h"
 
@@ -48,10 +49,16 @@ int main()
     cli.Get(key, &val);
     printf(":%s\n", val.c_str());
 #endif
+
+    int t1 = time(NULL);
+
     for (int i = 0; i < 100000; i++) {
         cli.Set(key, val);
-        printf("%d\n", i);
+        //printf("%d\n", i);
     }
+    
+    int t = time(NULL) - t1;
+    printf("100000 datas, time is : %d seconds, %d/s\n", t, 100000/t);
 
     return 0;
 }

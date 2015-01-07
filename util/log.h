@@ -27,7 +27,13 @@ class Log {
         int Write(int level, const char *fmt, va_list ap);
         int Rotate();
         const char *LevelString(int level);
-   
+
+#if 0
+        //有目录返回0
+        //否则返回 -1
+        int HasDir(const char *str);
+#endif
+
     private:
         int fd_;
         std::string logfile_path_;

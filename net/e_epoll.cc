@@ -58,11 +58,12 @@ int Epoll::waitReadEvent(int *fired_fd, int time_out)
         return -1;
     }
 
+    int j = 0;
     for (int i = 0; i < n; i++)
     {
         if(events_[i].events & EPOLLIN) {
 
-            fired_fd[i] = events_[i].data.fd;
+            fired_fd[j++] = events_[i].data.fd;
         } 
     }
 

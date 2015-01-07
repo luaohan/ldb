@@ -10,18 +10,31 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "server.h"
 #include "string_type.h"
 #include "../util/daemon.h"
 #include "../util/log.h"
 
-Server::Server()
+bool quit = false;
+
+void SigProcess();
+static void SigtermHandler(int sig);
+
+Server::Server():
+    socket_(NULL)
 {
+
 }
 
 Server::~Server()
 {
+    if (socket_ != NULL) {
+        delete socket_;
+    }
+
+    delete db_;
 }
 
 int Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
@@ -126,13 +139,14 @@ void Server::CreateComTable()
 
 int Server::Run(const char *config_file)
 {
+    SigProcess();
+
     int ret = config_.LoadConfig(config_file);
     if (ret != 0) {
         fprintf(stderr, "configfile is wrong.\n");
         return -1;
     }
 
-    
     log = new Log(config_.log_file_, config_.level_, 0);
     if (log->fd() == -1 ) {
         fprintf(stderr, "open logfile error: %s\n", strerror(errno));
@@ -146,18 +160,40 @@ int Server::Run(const char *config_file)
 
     CreateComTable();                                          
 
-    socket_.setNoNagle();
+    socket_ = new Acceptor(true);
+
+    socket_->setNoNagle();
 
     int backlog = 512;
-    if (socket_.Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
+    if (socket_->Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
         return -1;
     }
 
-    socket_.setNoblock();
+    socket_->setNoblock();
     
-    event_.addReadEvent(socket_.getFd());
+    event_.addReadEvent(socket_->getFd());
 
     if ( config_.daemon_ ) ldb_daemon();
     
     return 0;
 }
+
+void SigProcess()
+{
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+
+    struct sigaction act;
+
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    act.sa_handler = SigtermHandler;
+    sigaction(SIGTERM, &act, NULL);
+}
+
+static void SigtermHandler(int sig)
+{
+    quit = true;
+    log_info("server exit");
+}
+
