@@ -83,7 +83,7 @@ void Server::DeleteClient(int fd)
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->link_->getFd() == fd) {
+        if ((*i)->link_->GetFd() == fd) {
             clients_.erase(i);
             break;
         }
@@ -95,7 +95,7 @@ Client *Server::FindClient(int fd)
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->link_->getFd() == fd) {
+        if ((*i)->link_->GetFd() == fd) {
             return (*i);
         }
     }

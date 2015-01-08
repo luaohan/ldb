@@ -1,7 +1,10 @@
 // protocol.cc (2015-01-08)
 // WangPeng (1245268612@qq.com)
 
+
 #include <string.h>
+#include <assert.h>
+#include <arpa/inet.h>
 
 #include "protocol.h"
 

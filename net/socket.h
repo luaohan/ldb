@@ -20,6 +20,14 @@ class Socket {
         //error: return -1
         int Connect(const char *ip, int port);
 
+        void SetFd(int fd) {
+            fd_ = fd;
+        }
+        
+        void SetPort(int port) {
+            port_ = port;
+        }
+
         int GetFd() const;
         int GetPort() const;
         char *GetIp(); 
@@ -36,7 +44,7 @@ class Socket {
 
         //just like read() and write()
         //ok: return the size of read
-        //error: return -1,调用者需要判断 EAGAIN
+        //调用者需要判断 EAGAIN
         //a client exit: return 0
         
         int ReadData(char *buffer, int buffer_size);
@@ -44,6 +52,7 @@ class Socket {
 
     private:
         int fd_;
+#include "socket.h"
         char ip_[INET_ADDRSTRLEN];
         int port_;
         bool is_noblocked_;

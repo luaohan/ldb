@@ -10,15 +10,11 @@
 #include <leveldb/slice.h>
 #include <string>
 
-//#include "command.h"
-//#include "client.h"
-//#include "../net/e_epoll.h"
-//#include "../util/config.h"
+#include "command.h"
+#include "../net/e_epoll.h"
+#include "../util/config.h"
 
-class Command;
 class Client;
-class Epoll;
-class Config;
 class Acceptor;
 
 extern bool quit;

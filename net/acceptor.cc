@@ -7,6 +7,7 @@
 #include <errno.h>
 
 #include "acceptor.h"
+#include "socket.h"
 
 Acceptor::Acceptor():
     fd_(-1), port_(-1), backlog_(-1), is_noblocked_(false)
@@ -131,9 +132,9 @@ ReAccept:
         return NULL;
     }
 
-    socket->fd_ = fd;
-    socket->port_ = ntohs(remote.sin_port);
-    strcpy( socket->ip_, inet_ntoa(remote.sin_addr));
+    socket->SetFd(fd);
+    socket->SetPort(ntohs(remote.sin_port));
+    strcpy( socket->GetIp(), inet_ntoa(remote.sin_addr));
    
     return socket;
 }

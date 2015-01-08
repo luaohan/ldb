@@ -32,17 +32,17 @@ void Socket::Close()
     }
 }
 
-int Socket::getFd() const
+int Socket::GetFd() const
 {
     return fd_;
 }
 
-int Socket::getPort() const
+int Socket::GetPort() const
 {
     return port_;
 }
 
-char *Socket::getIp() 
+char *Socket::GetIp() 
 {
     return ip_;
 }
@@ -145,9 +145,9 @@ int Socket::ReadData(char *buffer, int buffer_size)
 
                 continue;
             } else {
-                return -1;
+                break;
             }
-        }else{
+        } else {
             if (len == 0) {
                 return 0;
             }
@@ -173,7 +173,7 @@ int Socket::WriteData(char *buffer, int buffer_size)
                 continue;
             
             } else {
-                return -1;
+                break;
             }
         } else {
             ret += len;

@@ -1,15 +1,15 @@
 // acceptor.h (2014-12-24)
 // WangPeng (1245268612@qq.com)
 
-#ifndef _SOCKET_H_
-#define _SOCKET_H_
+#ifndef _ACCEPTOR_H_
+#define _ACCEPTOR_H_
 
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include "socket.h"
+class Socket;
 
 class Acceptor {
 

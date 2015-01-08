@@ -11,8 +11,7 @@
 #include "../util/str.h" 
 #include "../util/log.h"
 #include "../net/socket.h"
-//#include "../net/acceptor.h"
-
+#include "../net/acceptor.h"
 #include "../util/protocol.h"
 
 int tell_client( Client *client )
@@ -67,7 +66,7 @@ void process_events(Server &server)
 
     for (int i = 0; i < n; i++) 
     {
-        if ( server.fired_fd[i] == server.socket_->getFd()) {
+        if ( server.fired_fd[i] == server.socket_->GetFd()) {
             Socket *link = server.socket_->Accept();
             if (link == NULL) {
                 log_error("Accept error:[%s]", strerror(errno));
@@ -85,16 +84,39 @@ void process_events(Server &server)
                     link->GetIp(), link->GetPort(), link->GetFd());
             continue;
         }
-#if 0
+
         Client *cli = server.FindClient(server.fired_fd[i]);
 
+        int ret;
+        if (cli->data_one_ == false) {
+            ret = cli->link_->ReadData(cli->recv_ + cli->data_one_pos_, 
+                    HEAD_LEN - cli->data_one_pos_);
+
+            if (ret < HEAD_LEN) {
+                if (errno != EAGAIN) {
+                    log_error("readData error:[%s], fd:[%d]", 
+                            strerror(errno), cli->link_->getFd());
+
+                    server.event_.DelReadEvent(cli->link_->GetFd());
+                    server.DeleteClient(cli->link_->GetFd());
+                    delete cli;
+
+                    continue;
+                }
+
+                cli->data_one_pos_ += ret;
+            }
+        }
+
+
+#if 0
         int ret;
         ret = cli->link_->ReadData(cli->recv_ + cli->pos_, BUFSIZ);
         if (ret == -1) {
             if (errno != EAGAIN) {
                 log_error("readData error:[%s], fd:[%d]", 
                         strerror(errno), cli->link_->getFd());
-                
+
                 server.event_.DelReadEvent(cli->link_->getFd());
                 server.DeleteClient(cli->link_->getFd());
                 delete cli;
@@ -110,12 +132,12 @@ void process_events(Server &server)
             server.event_.DelReadEvent(cli->link_->GetFd());
             server.DeleteClient(cli->link_->GetFd());
             delete cli;
-            
+
             continue;
         }
-        
+
         cli->pos_ += ret;
-       
+
         if (cli->data_one_ == false && cli->data_two_ == false && 
                 cli->pos_ < HEAD_LEN) { //接收到的数据太少，暂不解析, 返回 继续接收
 
@@ -130,9 +152,9 @@ void process_events(Server &server)
                 cli->pos_ = 0;
             }
         }
-        
+
 #endif
-        
+
 
 #if 0
         int ret;
@@ -141,13 +163,13 @@ void process_events(Server &server)
             if (ret < 4 - cli->pos_) {
                 cli->pos_ = ret;
             }
-            
+
             cli->data_one_ == true;
         }
 
         int data_len = ntohl(*(int *)&cli->recv_[0]);
         fprintf(stderr, "data_len: %d\n", data_len);
-        
+
         ret = cli->link_->readData(cli->recv_ + cli->pos_, data_len);
         if (ret < 4) {
             cli->pos_ = ret;
