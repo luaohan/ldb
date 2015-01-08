@@ -11,9 +11,12 @@
 Socket::Socket(): 
     fd_(-1), port_(-1), is_noblocked_(false) 
 {
-    fd_ = socket( AF_INET, SOCK_STREAM, 0 );
-    
     ip_[0] = '\0';
+    
+    fd_ = socket( AF_INET, SOCK_STREAM, 0 );
+
+    assert(fd_ != -1);
+    
 }
 
 Socket::~Socket()
@@ -23,8 +26,10 @@ Socket::~Socket()
 
 void Socket::Close() 
 {
-    if (fd_ > 0) close(fd_);
-    fd_ = -1;
+    if (fd_ > 0) {
+        close(fd_);
+        fd_ = -1;
+    }
 }
 
 int Socket::getFd() const
@@ -37,7 +42,7 @@ int Socket::getPort() const
     return port_;
 }
 
-char * Socket::getIp() 
+char *Socket::getIp() 
 {
     return ip_;
 }
@@ -59,7 +64,7 @@ int Socket::SetNoblock()
     return 0;
 }
 
-bool Socket::isNoblocked() const
+bool Socket::IsNoblocked() const
 {
     return is_noblocked_;
 }
@@ -139,13 +144,11 @@ int Socket::ReadData(char *buffer, int buffer_size)
             if(errno == EINTR){
 
                 continue;
-            }else if(errno == EWOULDBLOCK || errno == EAGAIN){
-                break;
-            }else{
+            } else {
                 return -1;
             }
         }else{
-            if(len == 0){
+            if (len == 0) {
                 return 0;
             }
 
@@ -153,9 +156,6 @@ int Socket::ReadData(char *buffer, int buffer_size)
             buffer += len;
             want -= len;
         }       
-        if( !is_noblocked_ ){
-            break;
-        }
     }
 
     return ret;
@@ -171,21 +171,14 @@ int Socket::WriteData(char *buffer, int buffer_size)
         if(len == -1){
             if(errno == EINTR){
                 continue;
-            }else if(errno == EWOULDBLOCK || errno == EAGAIN){
-                break;
-            }else{
+            
+            } else {
                 return -1;
             }
-        }else{
-            if(len == 0){
-                break;
-            }
+        } else {
             ret += len;
             buffer += len;
             want -= len;
-        }
-        if(!is_noblocked_){
-            break;
         }
     }
 

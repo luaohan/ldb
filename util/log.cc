@@ -24,11 +24,9 @@ Log::Log(std::string logfile_path, int level, int rotate_size):
         rotate_size_ = 1024 * 1024 * 10; //10M
     }
 
-    //printf(":%s\n", logfile_path_.c_str());
-
     fd_ = open(logfile_path_.c_str(), O_RDWR | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
 
-    //assert(fd_ != -1);
+    assert(fd_ != -1);
 }
 
 #if 0

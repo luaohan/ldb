@@ -15,15 +15,23 @@ Epoll::Epoll()
     events_ 
         = (struct epoll_event *)malloc( sizeof(struct epoll_event) * max_connections_ );
 
+    assert(epfd_ != -1);
+    assert(events_ != NULL);
+
 }
 
 Epoll::~Epoll()
 {
-    if (epfd_ > 0) close(epfd_);
-    if (events_ != NULL ) free(events_);
+    if (epfd_ > 0) {
+        close(epfd_);
+    }
+
+    if (events_ != NULL ) {
+        free(events_);
+    }
 }
 
-int Epoll::addReadEvent(int fd)
+int Epoll::AddReadEvent(int fd)
 {
     struct epoll_event ee;
     ee.data.fd = fd;
@@ -37,7 +45,7 @@ int Epoll::addReadEvent(int fd)
     return 0;
 }
 
-int Epoll::delReadEvent(int fd)
+int Epoll::DelReadEvent(int fd)
 {
     struct epoll_event ee;
     ee.data.fd = fd;
@@ -51,7 +59,7 @@ int Epoll::delReadEvent(int fd)
     return 0;
 }
 
-int Epoll::waitReadEvent(int *fired_fd, int time_out)
+int Epoll::WaitReadEvent(int *fired_fd, int time_out)
 {
     int n = epoll_wait(epfd_, events_, max_connections_, time_out);
     if (n < 0) {

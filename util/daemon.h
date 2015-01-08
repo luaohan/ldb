@@ -5,7 +5,7 @@
 #define _LDB_DAEMON_H_
 
 
-void ldb_daemon(void);
+void Daemon(void);
 
 
 #endif

@@ -12,12 +12,12 @@ class Epoll {
         Epoll();
         ~Epoll();
 
-        int addReadEvent(int fd);
-        int delReadEvent(int fd);
+        int AddReadEvent(int fd);
+        int DelReadEvent(int fd);
 
         //ok: return the num of the events 
         //error: return -1
-        int waitReadEvent(int *fired_fd, int time_out = -1);
+        int WaitReadEvent(int *fired_fd, int time_out = -1);
 
     private:
         int epfd_;

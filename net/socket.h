@@ -20,11 +20,11 @@ class Socket {
         //error: return -1
         int Connect(const char *ip, int port);
 
-        int getFd() const;
-        int getPort() const;
-        char *getIp(); 
+        int GetFd() const;
+        int GetPort() const;
+        char *GetIp(); 
 
-        bool isNoblocked() const;
+        bool IsNoblocked() const;
     
         //if uses these, call before Connect()
         int SetNoblock();
@@ -36,8 +36,9 @@ class Socket {
 
         //just like read() and write()
         //ok: return the size of read
-        //error: return -1
+        //error: return -1,调用者需要判断 EAGAIN
         //a client exit: return 0
+        
         int ReadData(char *buffer, int buffer_size);
         int WriteData(char *buffer, int buffer_size);
 

@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-void ldb_daemon(void) 
+void Daemon(void) 
 {
     int fd;
 

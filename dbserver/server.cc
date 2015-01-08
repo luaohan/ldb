@@ -14,6 +14,7 @@
 
 #include "server.h"
 #include "string_type.h"
+#include "../net/acceptor.h"
 #include "../util/daemon.h"
 #include "../util/log.h"
 
@@ -160,20 +161,21 @@ int Server::Run(const char *config_file)
 
     CreateComTable();                                          
 
-    socket_ = new Acceptor(true);
-
-    socket_->setNoNagle();
+    socket_ = new Acceptor;
+    if (socket_ == NULL) {
+        return -1;
+    }
 
     int backlog = 512;
     if (socket_->Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
         return -1;
     }
 
-    socket_->setNoblock();
+    socket_->SetNoblock();
     
-    event_.addReadEvent(socket_->getFd());
+    event_.AddReadEvent(socket_->GetFd());
 
-    if ( config_.daemon_ ) ldb_daemon();
+    if ( config_.daemon_ ) Daemon();
     
     return 0;
 }
