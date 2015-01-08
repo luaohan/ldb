@@ -10,7 +10,7 @@
 #include <leveldb/slice.h>
 #include <string>
 
-#include "command.h"
+//#include "command.h"
 #include "../net/e_epoll.h"
 #include "../util/config.h"
 
@@ -25,8 +25,6 @@ class Server {
         Server();
         ~Server();
 
-        Command *FindCommand(char *name);
-
         void AddClient(Client *cli);
         void DeleteClient(int fd);
         Client *FindClient(int fd);
@@ -40,16 +38,11 @@ class Server {
         int Run(const char *config_file);
 
     private:
-        void AddCommand(Command &com);
-        void CreateComTable();
-
-    private:
         leveldb::Options options_;
         leveldb::WriteOptions write_options_;
         leveldb::ReadOptions read_options_;
         leveldb::DB *db_;
         
-        std::vector<Command> commands_;
         std::vector<Client *> clients_;
 
     public:

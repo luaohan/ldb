@@ -8,8 +8,8 @@
 
 #include "protocol.h"
 
-int FillPacket(char *buf, int buf_len, char *key, int key_len, 
-        char *value, int value_len, short data_type)
+int FillPacket(char *buf, int buf_len, const char *key, int key_len, 
+        const char *value, int value_len, short data_type)
 {
     assert(buf != NULL);
     assert(buf_len > 0 /*&& key_len > 0 && value_len > 0*/);

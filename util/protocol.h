@@ -15,7 +15,7 @@
  *|unsigned int   |unsigned short|unsigned short|
  *|packet_len     |type          |key_len       | key | value |
  * */
-#define MAX_KET_LEN 65535 //64k
+#define MAX_KEY_LEN 65535 //64k
 #define MAX_VAL_LEN 65535 //64k
 
 #define HEAD_LEN (sizeof(unsigned int) + sizeof(unsigned short))
@@ -28,8 +28,8 @@
 //如果返回值大于buf_len, 说明数据包没有构造成功，
 //调用者需要重新寻找跟大的buf, 来构造数据包,
 //允许key 和 value 同时 为 NULL，这时只有包头
-int FillPacket(char *buf, int buf_len, char *key, int key_len, 
-        char *value, int value_len, short data_type);
+int FillPacket(char *buf, int buf_len, const char *key, int key_len, 
+        const char *value, int value_len, short data_type);
 
 
 

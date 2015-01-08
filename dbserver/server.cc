@@ -68,11 +68,6 @@ int Server::Delete(const leveldb::Slice& key)
         return -1;
 }
 
-void Server::AddCommand(Command &com)
-{
-   commands_.push_back(com);
-}
-
 void Server::AddClient(Client *cli)
 {
     clients_.push_back(cli);
@@ -101,43 +96,6 @@ Client *Server::FindClient(int fd)
     }
 }
 
-Command *Server::FindCommand(char *name)
-{
-    std::vector<Command>::iterator i;
-    for (i = commands_.begin(); i != commands_.end(); i++)
-    {
-        if (strcmp(i->name, name) == 0 ) {
-            return &(*i);
-        }
-    }
-
-    return NULL;
-}
-
-void Server::CreateComTable()
-{
-    Command ldb_commands_table[] = {
-        {"set", ldb_set_command, 3, "w"},
-        {"get", ldb_get_command, 2, "r"},
-        {"del", ldb_del_command, 2, "w"}/*,
-        {"update", ldb_update_command, 3, "w"},
-        {"lookall", ldb_lookall_command, 1, "r"},
-        {"clear", ldb_clear_command, 1, "w"},
-        {"select", ldb_select_command, 2, "w"}*/
-    };  
-    
-    AddCommand(ldb_commands_table[0]);
-    AddCommand(ldb_commands_table[1]);
-    AddCommand(ldb_commands_table[2]);
-#if 0
-    AddCommand(ldb_commands_table[3]);
-    AddCommand(ldb_commands_table[4]);
-    AddCommand(ldb_commands_table[5]);
-    AddCommand(ldb_commands_table[6]);
-#endif
-
-}
-
 int Server::Run(const char *config_file)
 {
     SigProcess();
@@ -158,8 +116,6 @@ int Server::Run(const char *config_file)
     leveldb::Status status 
         = leveldb::DB::Open(options_, config_.db_directory_.c_str(), &db_);
     assert(status.ok());
-
-    CreateComTable();                                          
 
     socket_ = new Acceptor;
     if (socket_ == NULL) {

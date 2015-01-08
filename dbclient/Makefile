@@ -4,7 +4,8 @@
 #SRC := $(wildcard *.cc) 
 SRC := ../net/socket.cc \
 	./ldbc.cc \
-	./test.cc
+	./test.cc \
+	../util/protocol.cc
 
 client: $(SRC)
 	        g++ -g $^ -o $@ 

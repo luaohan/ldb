@@ -1,8 +1,8 @@
 // ldb_string_type.h (2014-11-20)
 // WangPeng (1245268612@qq.com)
 
-#ifndef _ldb_STRING_TYPE_H_
-#define _ldb_STRING_TYPE_H_
+#ifndef _LDB_STRING_TYPE_H_
+#define _LDB_STRING_TYPE_H_
 
 #include "client.h"
 #include "server.h"

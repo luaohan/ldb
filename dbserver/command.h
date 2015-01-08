@@ -4,11 +4,6 @@
 #ifndef _LDB_COMMAND_H_
 #define _LDB_COMMAND_H_
 
-#if 0
-#include "server.h"
-#include "client.h"
-#endif
-
 class Server;
 class Client;
 

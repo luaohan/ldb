@@ -2,59 +2,46 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <leveldb/db.h>
 #include <iostream>
+#include <errno.h>
+#include <leveldb/db.h>
+#include <leveldb/slice.h>
 
 #include "string_type.h"
 #include "server.h"
 #include "command.h"
+#include "../util/protocol.h"
 
 
 void ldb_set_command(Server *server, Client *client)
 {
     assert(server != NULL && client != NULL);
 
-    if (client->argc_ != client->cmd->argc) {
-        memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR));
-        return ;
+    leveldb::Slice key(client->key_, client->key_len_);
+    
+    int value_len = client->body_len_ - client->key_len_;
+    leveldb::Slice val(client->val_, value_len);
+
+    int ret = server->Insert(key, val);
+    if (ret == -1) {
+        //error
     }
     
-    int ret; 
-    int key_len = strlen(client->argv_[1]);
-    char *key = (char *)malloc( key_len + 1);
-    if (key == NULL) {
-        return ;
+    ret = FillPacket(client->replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
+    int write_len = client->link_->WriteData(client->replay_, ret);
+    if (write_len < ret) {
+        if (errno != EAGAIN) {
+            //error
+            return;
+        }
     }
-    
-    //fprintf(stderr, "sizeof(key): %d\n", key_len + 1);
-    memcpy(key, client->argv_[1], key_len);
-    key[key_len] = '\0';
-
-    int value_len = strlen(client->argv_[2]);
-    char *value = (char *)malloc( value_len + 1);
-    if (value== NULL) {
-        return ;
-    }
-
-    //fprintf(stderr, "sizeof(value): %d\n", value_len + 1);
-    memcpy(value, client->argv_[2], value_len);
-    value[value_len] = '\0';
-
-    leveldb::Slice s_key(key, key_len);
-    leveldb::Slice s_val(value, value_len);
-
-    server->Insert(s_key, s_val);
-
-    free(key);
-    free(value);
-
-    memcpy(client->replay_, LDB_ADD_OK, strlen(LDB_ADD_OK) + 1);
-    
+ 
     return ;
 }
 
 void ldb_get_command(Server *server, Client *client)
 {
+#if 0
     if (client->argc_ != client->cmd->argc) {
         memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR) + 1);
         return ;
@@ -71,8 +58,8 @@ void ldb_get_command(Server *server, Client *client)
     }
     
     return ;
+#endif
 }
-
 #if 0
 void ldb_update_command(Server *server, Client *client)
 {
@@ -120,6 +107,7 @@ void ldb_update_command(Server *server, Client *client)
 
 void ldb_del_command(Server *server, Client *client)
 {
+#if 0
     if (client->argc_ != client->cmd->argc) {
         memcpy(client->replay_, LDB_PARA_ERROR, strlen(LDB_PARA_ERROR) + 1);
         return ;
@@ -136,6 +124,9 @@ void ldb_del_command(Server *server, Client *client)
     }
     
     return ;
+
+#endif
+
 
 #if 0 
     ldb_hash_table_node_t *old_node = 

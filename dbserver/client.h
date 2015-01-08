@@ -7,13 +7,14 @@
 #include <stdio.h>
 
 #include "command.h"
+#include "../util/protocol.h"
 #include "../net/socket.h"
 
 class Client {
 
     public:
-        Client(Socket *link):link_(link), data_one_pos_(0), data_one_(false), 
-            data_two_pos_(0), data_two_(false){ }
+        Client(Socket *link):link_(link), data_pos_(0), data_one_(false), 
+             body_len_(0), cmd(NULL){ }
 
         ~Client(){ 
             if (link_ != NULL) {
@@ -24,21 +25,22 @@ class Client {
     public:
         Socket *link_;
 
-        int argc_;        //客户端发来的命令的参数的个数
-        char *argv_[10];  //客户端发来的命令的参数,目前先只允许10 个吧
+        char key_[MAX_KEY_LEN];
+        char val_[MAX_VAL_LEN];
         
-        struct Command *cmd;
-
-        int data_one_pos_;   //如果服务器实际读到的字节小于需要的字节数，
+        //struct Command *cmd;
+        command_proc *cmd;
+        int data_pos_;       //如果服务器实际读到的字节小于需要的字节数，
                              //本字段用于记录实际读到的字节，
                              //下次读取将从这里开始
-        int data_two_pos_;
 
         bool data_one_; //数据包头是否读够
-        bool data_two_; //数据包体是否读够
 
-        char recv_[BUFSIZ];    //接收缓冲区,这里也不太好
-        char replay_[BUFSIZ];  //回复缓冲区
+        int body_len_;  //包体的长度
+        int key_len_;   //key 的长度
+
+        char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
+        char replay_[MAX_PACKET_LEN];  //回复缓冲区
 
 };
 
