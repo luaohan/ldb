@@ -1,0 +1,6 @@
+/log/
+/db_directory/
+*.a
+*.so
+libleveldb.a
+server
