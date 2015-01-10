@@ -9,6 +9,7 @@
 #include <assert.h>
 
 #include "ldbc.h"
+#include "../util/protocol.h"
 
 int main()
 {
@@ -19,52 +20,35 @@ int main()
         return -1;
     }
 
-    std::string key = "keyaaabbb";
-    std::string val = "valaaabbb";
-#if 0    
-    std::string val2 = "valaaabbb2";
-    std::string val3 = "valaaabbb3";
 
-    cli.Set(key, val);
-    cli.Get(key, &val);
-    printf(":%s\n", val.c_str());
+    char key[10];
+    memset(key, '1', 9);
+    key[9] = '\0';
     
-    cli.Del(key);
-    cli.Set(key, val2);
-    cli.Get(key, &val);
-    printf(":%s\n", val.c_str());
-   
-    cli.Del(key);
-    cli.Set(key, val3);
-    cli.Get(key, &val);
-    printf(":%s\n", val.c_str());
-    
-    cli.Del(key);
-    cli.Del(key);
-    cli.Get(key, &val);
-    printf(":%s\n", val.c_str());
-#endif
-#if 0    
-    std::string key = "keykey";
-    std::string val;
-    cli.Get(key, &val);
-    printf(":%s\n", val.c_str());
-#endif
+    char val[10];
+    memset(val, '2', 9);
+    val[9] = '\0';
+
+    std::string true_key(key, 10);
+    std::string true_val(val, 10);
 
     int t1 = time(NULL);
-//    for (int i = 0; i < 100000; i++) {
-  //     cli.Set(key, val);
-        //assert(cli.Set(key, val) != -1);
-//        printf("%d\n", i);
- //   }
+#if 0
+    for (int i = 0; i < 100000; i++) {
+        cli.Set(true_key, true_val);
+    }
+#endif
+    
+    std::string get;
+    cli.Get(true_key, &get);
+    printf("value: %s\n", get.c_str());
 
-    std::string value;
-  //  cli.Del(key);
-    if (cli.Get(key, &value) == 4) {
+    cli.Del(true_key);
+    int ret = cli.Get(true_key, &get);
+    if (ret == 4) {
         printf("key not exit\n");
     } else {
-        printf("value:%s\n", value.c_str());
-        printf("value_len: %d\n", value.size());
+        printf("value: %s\n", get.c_str());
     }
 
     int t = time(NULL) - t1;

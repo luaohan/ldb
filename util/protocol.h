@@ -18,12 +18,13 @@
  *|packet_len     |type          |key_len       | key | value |
  * */
 #define MAX_KEY_LEN 65535 //64k
-#define MAX_VAL_LEN 65535 //64k
+#define MAX_VAL_LEN 10485760    //10M
+#define ONE_M       1048576    
 
-#define HEAD_LEN (sizeof(unsigned int) + sizeof(unsigned short))
+#define HEAD_LEN (sizeof(int) + sizeof(short))
 
-#define MAX_PACKET_LEN sizeof(unsigned int) + sizeof(unsigned short) + \
-    sizeof(unsigned short) + 65535 + 65535 
+#define MAX_PACKET_LEN sizeof(int) + sizeof(short) + \
+    sizeof(short) + MAX_KEY_LEN + MAX_VAL_LEN 
 
 //任何时候函数返回整个包的长度
 //调用者需要自己判断返回值是否大于buf_len

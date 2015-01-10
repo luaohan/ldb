@@ -11,8 +11,12 @@
 class Client {
 
     public:
-        Client(){ };
-        ~Client(){ };
+        Client():buffer_(NULL), buffer_size_(0){ };
+        ~Client(){ 
+            if (buffer_ != NULL) {
+                delete buffer_;
+            }
+        };
 
         //成功返回 0
         //错误返回 -1
@@ -35,7 +39,8 @@ class Client {
 
     public:
         Socket socket_;
-        std::string buffer_;
+        char *buffer_;
+        int buffer_size_;
 
 };
 

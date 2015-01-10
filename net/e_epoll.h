@@ -6,6 +6,10 @@
 
 #include <sys/epoll.h>
 
+struct Event {
+
+};
+
 class Epoll {
 
     public:

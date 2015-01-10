@@ -87,9 +87,10 @@ int Client::ReadBody()
 
     //到这里说明需要的东西已经读够
     //解析读到的内容, 放到cli 的相应成员
-    short key_len = ntohs(*((short *)&(recv_[0])));
+    //short key_len = ntohs(*((short *)&(recv_[0])));
+    int key_len = ntohs(*((short *)&(recv_[0])));
     key_len_ = key_len;
-    
+
     if (key_len > 0) {
         memcpy(key_, recv_ + sizeof(short), key_len);
     }

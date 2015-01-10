@@ -13,8 +13,7 @@ using namespace std;
 #define ASSERT_FALSE(x)  if (x) { assert(0); return false; }
 
 Test::Test(Client *client) 
-    : client_(client)
-      , mod_(kText)
+    : client_(client), mod_(kText)
 {
     for (int i = 0; i < 256; i++) {
         bin_[i]= i;
