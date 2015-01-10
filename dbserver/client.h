@@ -14,7 +14,7 @@ class Client {
 
     public:
         Client(Socket *link):link_(link), data_pos_(0), data_one_(false), 
-             body_len_(0), cmd(NULL){ }
+             body_len_(0), cmd_(NULL){ }
 
         ~Client(){ 
             if (link_ != NULL) {
@@ -22,14 +22,20 @@ class Client {
             }
         }
 
+        //包头/包体 解析完毕: return 0
+        //error: return -1, 调用者要把client 关掉
+        //client exit: return 1, 调用者要把client 关掉
+        //return 2,包头/包体 不完整，放回继续读
+        int ReadHead();
+        int ReadBody();
+
     public:
         Socket *link_;
 
         char key_[MAX_KEY_LEN];
         char val_[MAX_VAL_LEN];
         
-        //struct Command *cmd;
-        command_proc *cmd;
+        CommandProc *cmd_;
         int data_pos_;       //如果服务器实际读到的字节小于需要的字节数，
                              //本字段用于记录实际读到的字节，
                              //下次读取将从这里开始

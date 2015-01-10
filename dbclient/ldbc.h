@@ -14,19 +14,24 @@ class Client {
         Client(){ };
         ~Client(){ };
 
-        //以下三个方法都是，成功则返回0，
-        //错误返回-1
+        //成功返回 0
+        //错误返回 -1
+        //返回 -2 代表server 退出
+        //如果key or value 太大，返回实际所需的数据包的大小
         int Set(std::string &key, std::string &value); //可以set 两个相同的key,
                                                        //第一个将被覆盖
 
+        //成功返回 0
+        //错误返回 -1
+        //返回 -2 代表server 退出
         int Del(std::string &key);                     //可以删除一个不存在的key
 
-        int Get(std::string &key, std::string *value); //获取key 的值，
-                                                       //值保存在value 中,
-                                                       //如果数据库中存在key
-                                                       //value 将返回key 的真实值
-                                                       //若不存在, value 返回
-                                                       //的值将是 "no the key"
+        //成功返回 0, 值保存在value 中
+        //错误返回 -1
+        //返回 -2 代表server 退出
+        //key 不存在时，返回 4
+        int Get(std::string &key, std::string *value); 
+                                                       
 
     public:
         Socket socket_;

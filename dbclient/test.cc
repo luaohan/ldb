@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <assert.h>
 
 #include "ldbc.h"
 
@@ -51,12 +52,21 @@ int main()
 #endif
 
     int t1 = time(NULL);
+//    for (int i = 0; i < 100000; i++) {
+  //     cli.Set(key, val);
+        //assert(cli.Set(key, val) != -1);
+//        printf("%d\n", i);
+ //   }
 
-    for (int i = 0; i < 100000; i++) {
-        cli.Set(key, val);
-        //printf("%d\n", i);
+    std::string value;
+  //  cli.Del(key);
+    if (cli.Get(key, &value) == 4) {
+        printf("key not exit\n");
+    } else {
+        printf("value:%s\n", value.c_str());
+        printf("value_len: %d\n", value.size());
     }
-    
+
     int t = time(NULL) - t1;
     printf("100000 datas, time is : %d seconds, %d/s\n", t, 100000/t);
 

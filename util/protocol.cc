@@ -31,12 +31,11 @@ int FillPacket(char *buf, int buf_len, const char *key, int key_len,
     memcpy(p, (char *)&packet_type, sizeof(unsigned short));
     p += sizeof(unsigned short);
 
-    if (key == NULL || value == NULL) {
+    if (key == NULL && value == NULL) {
         return HEAD_LEN; 
     }
     
     short key_len_net = htons(key_len);
-    //short val_len_net = htons(value_len);
     // key
     memcpy(p, (char *)&key_len_net, sizeof(unsigned short));
     p += sizeof(unsigned short);
@@ -44,9 +43,9 @@ int FillPacket(char *buf, int buf_len, const char *key, int key_len,
     p += key_len;
 
     //value
-    //memcpy(p, (char *)&val_len_net, sizeof(short));
-    //p += sizeof(short);
-    memcpy(p, value, value_len);
+    if (value != NULL) {
+        memcpy(p, value, value_len);
+    }
     
     return valid_packet_len;
 }

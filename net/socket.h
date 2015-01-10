@@ -44,15 +44,22 @@ class Socket {
 
         //just like read() and write()
         //ok: return the size of read
-        //调用者需要判断 EAGAIN
         //a client exit: return 0
+        //调用者需要判断 EAGAIN
         
-        int ReadData(char *buffer, int buffer_size);
-        int WriteData(char *buffer, int buffer_size);
+        int ReadData(char *buffer, int size);
+        int WriteData(char *buffer, int size);
+
+        //ok: 返回读到的字节数
+        //error: return -1
+        int BlockRead(char *buffer, int size);
+
+        //ok: return size
+        //error: return -1;
+        int BlockWrite(char *buffer, int size);
 
     private:
         int fd_;
-#include "socket.h"
         char ip_[INET_ADDRSTRLEN];
         int port_;
         bool is_noblocked_;

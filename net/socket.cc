@@ -133,54 +133,80 @@ void Socket::SetNoNagle()
     return;
 }
 
-int Socket::ReadData(char *buffer, int buffer_size)
+int Socket::ReadData(char *buffer, int size)
 {
-    int ret = 0;
-    int want = buffer_size;
-    while(want  > 0)
-    {
-        int len = read(fd_, buffer, want);
-        if(len == -1){
-            if(errno == EINTR){
 
-                continue;
-            } else {
-                break;
-            }
-        } else {
-            if (len == 0) {
-                return 0;
-            }
+read_again:
+    int read_size = read(fd_, buffer, size);
+    if (read_size < 0) {
+        if (errno == EINTR) {
+            goto read_again;
+        }
 
-            ret += len;
-            buffer += len;
-            want -= len;
-        }       
+        return -1;
     }
 
-    return ret;
+    return read_size;
 }
 
-int Socket::WriteData(char *buffer, int buffer_size)
+int Socket::WriteData(char *buffer, int size)
 {
-    int ret = 0;
-    int want = buffer_size;
-    while( want > 0 )
-    {
-        int len = write(fd_, buffer, want);
-        if(len == -1){
-            if(errno == EINTR){
-                continue;
-            
-            } else {
-                break;
-            }
-        } else {
-            ret += len;
-            buffer += len;
-            want -= len;
+
+write_again:
+    int write_size = write(fd_, buffer, size);
+    if (write_size == -1) {
+        if (errno == EINTR) {
+            goto write_again;
         }
+
+        return -1;
     }
 
-    return ret;
+    return write_size;
+}
+
+int Socket::BlockRead(char *buffer, int size) 
+{
+   int nleft = size;
+   int nread;
+
+   while (nleft > 0) {
+       nread = read(fd_, buffer, nleft);
+       if (nread < 0) {
+           if (errno == EINTR) {
+               nread = 0;
+           } else {
+               return -1;
+           }
+       } else if (nread == 0) {
+           break;
+       }
+
+       nleft -= nread;
+       buffer += nread;
+   }
+
+   return size - nleft;
+}
+
+int Socket::BlockWrite(char *buffer, int size) 
+{
+    int nleft = size;
+    int nwrite;
+
+    while (nleft > 0) {
+        nwrite = write(fd_, buffer, nleft);
+        if (nwrite <= 0) {
+            if (nwrite < 0 && errno == EINTR) {
+                nwrite = 0;
+            } else {
+                return -1;
+            }
+        }
+
+        nleft -= nwrite;
+        buffer += nwrite;
+    }
+
+    return size;
 }

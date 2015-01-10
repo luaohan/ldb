@@ -14,36 +14,28 @@ int Client::Set(std::string &key, std::string &val)
     const char *s_key = key.c_str();
     const char *s_val = val.c_str();
   
-    char buf[BUFSIZ]; //1024 * 8 = 8k
-                      //经过测试本系统的socket  默认的缓冲区的大小是 32768 字节，32k
+    char buf[MAX_PACKET_LEN]; 
     
-    int len = FillPacket(buf, BUFSIZ, s_key, key.size(), s_val, val.size(), SET_CMD);
+    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), 
+            s_val, val.size(), SET_CMD);
     
-    if (len > BUFSIZ) { //说明一个缓冲区的长度无法容纳下整个包
-                        //这时需要在堆上申请一个大的空间
-        return -1;    //现在先返回 -1
+    if (len > MAX_PACKET_LEN) { //说明一个缓冲区的长度无法容纳下整个包
+                                //这时需要在堆上申请一个大的空间
+        return len;             //现在先返回 len 
     }
 
-    int ret;
-    ret = socket_.WriteData(buf, len);
+    int ret = socket_.BlockWrite(buf, len);
     if (ret < 0) {
-        //log()
-        if (errno == EAGAIN) {
-            return -2; //下一次应该由写事件来驱动
-        }
-       
-        //error
         return -1;
     }
 
-    char replay[1024];
-    ret = socket_.ReadData(replay, HEAD_LEN); //读时应该来解析协议
+    ret = socket_.BlockRead(buf, HEAD_LEN);  
     if (ret < 0) {
-        //log()
-        if (errno != EAGAIN) {
-            //error
-        }
         return -1;
+    }
+
+    if (ret > 0 && ret < HEAD_LEN) {
+        return -2; //server exit
     }
 
     return 0;
@@ -53,31 +45,42 @@ int Client::Get(std::string &key, std::string *val)
 {
     const char *s_key = key.c_str();
     
-    /*get key*/
-    int len = strlen("get") + 1 + key.size();
-    char buffer[len + 1];
-    memcpy(buffer, "get ", 3 + 1);
-    memcpy(buffer + 4, s_key, key.size());
-    buffer[len] = '\0';
-
-    int ret;
-    ret = socket_.WriteData(buffer, len + 1);
+    char buf[MAX_PACKET_LEN]; 
+    
+    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
+    int ret = socket_.BlockWrite(buf, len);
     if (ret < 0) {
-        //log();
         return -1;
     }
 
-    char replay[1024];
-    ret = socket_.ReadData(replay, 1024);
+    ret = socket_.BlockRead(buf, HEAD_LEN); //读包头
     if (ret < 0) {
-        //log()
         return -1;
     }
-    replay[ret] = '\0';
+    if (ret > 0 && ret < HEAD_LEN) {
+        return -2; //server exit
+    }
+   
+    int packet_len = ntohl(*((int *)&(buf[0])));
+    short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
+   
+    if (packet_type == REPLAY_NO_THE_KEY) {
+        return REPLAY_NO_THE_KEY;
+    }
+    
+    int body_len = packet_len - HEAD_LEN;
+    ret = socket_.BlockRead(buf, body_len); //读包体
+    if (ret < 0) {
+        return -1;
+    }
+    if (ret > 0 && ret < HEAD_LEN) {
+        return -2; //server exit
+    }
 
-    buffer_.assign(replay, ret + 1);
+    short value_len = ntohs(*((short *)&(buf[0])));
+    std::string value(&buf[sizeof(short)], value_len);
 
-    *val = buffer_;
+    *val = value;
 
     return 0;
 }
@@ -86,27 +89,21 @@ int Client::Del(std::string &key)
 {
     const char *s_key = key.c_str();
     
-    /*get key*/
-    int len = strlen("del") + 1 + key.size();
-    char buffer[len + 1];
-    memcpy(buffer, "del ", 3 + 1);
-    memcpy(buffer + 4, s_key, key.size());
-    buffer[len] = '\0';
-
-    int ret;
-    ret = socket_.WriteData(buffer, len + 1);
-    if (ret < 0) {
-        //log();
-        return -1;
-    }
-
-    char replay[1024];
-    ret = socket_.ReadData(replay, 1024);
+    char buf[MAX_PACKET_LEN]; 
+    
+    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, DEL_CMD);
+    int ret = socket_.WriteData(buf, len);
     if (ret < 0) {
         return -1;
     }
 
-    replay[ret] = '\0';
-
+    ret = socket_.BlockRead(buf, HEAD_LEN); 
+    if (ret < 0) {
+        return -1;
+    }
+    if (ret > 0 && ret < HEAD_LEN) {
+        return -2; //server exit
+    }
+    
     return 0;
 }

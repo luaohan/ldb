@@ -13,7 +13,8 @@
 #include <signal.h>
 
 #include "server.h"
-#include "string_type.h"
+#include "command.h"
+#include "client.h"
 #include "../net/acceptor.h"
 #include "../util/daemon.h"
 #include "../util/log.h"
@@ -45,7 +46,7 @@ int Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
     if (status.ok())
         return 0;
     else 
-        return -1;
+        return -1; //一般不会发生
 }
 
 int Server::Get(const leveldb::Slice& key, std::string* value)
@@ -55,7 +56,7 @@ int Server::Get(const leveldb::Slice& key, std::string* value)
     if (status.ok())
         return 0;
     else 
-        return -1;
+        return -1;  //没有这个 key
 }
 
 int Server::Delete(const leveldb::Slice& key)
@@ -65,7 +66,7 @@ int Server::Delete(const leveldb::Slice& key)
     if (status.ok())
         return 0;
     else 
-        return -1;
+        return -1; //一般不会发生
 }
 
 void Server::AddClient(Client *cli)
@@ -155,3 +156,74 @@ static void SigtermHandler(int sig)
     log_info("server exit");
 }
 
+
+int Server::ProcessEvent()
+{
+    int n = event_.WaitReadEvent(fired_fd);
+    if ( n < 0) {
+        log_error("WaitReadEvent error:[%s]", strerror(errno));
+        return -1;
+    }
+
+    for (int i = 0; i < n; i++) 
+    {   
+        if ( fired_fd[i] == socket_->GetFd()) {
+            Socket *link = socket_->Accept();
+            if (link == NULL) {
+                log_error("Accept error:[%s]", strerror(errno));
+                continue;
+            }
+
+            link->SetNoblock();
+
+            event_.AddReadEvent(link->GetFd());
+
+            Client *cli = new Client(link);
+            AddClient(cli);
+
+            log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
+                    link->GetIp(), link->GetPort(), link->GetFd());
+            continue;     
+        }   
+
+        Client *cli = FindClient(fired_fd[i]);
+
+        //读数据包
+        int ret;
+        if (cli->data_one_ == false) {
+            //读包头
+            ret = cli->ReadHead();
+            if (ret == 1 || ret == -1) {
+                //close the client
+                event_.DelReadEvent(cli->link_->GetFd());
+                DeleteClient(cli->link_->GetFd());
+                delete cli;
+
+                continue;
+            }
+
+            if (ret == 2) { //包头不够
+                continue;
+            }
+        }
+
+        //读包体
+        ret = cli->ReadBody();
+        if (ret == 1 || ret == -1) {
+            //close the client
+            event_.DelReadEvent(cli->link_->GetFd());
+            DeleteClient(cli->link_->GetFd());
+            delete cli;
+
+            continue;
+        }
+
+        if (ret == 2) { //包体不够
+            continue;
+        }
+
+        cli->cmd_(this, cli);
+    }
+
+    return 0;
+}                                        

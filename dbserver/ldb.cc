@@ -8,7 +8,6 @@
 #include <fcntl.h>
 
 #include "server.h"
-#include "proc.h"
 #include "../util/log.h"
 
 int main(int argc, char **argv)
@@ -21,7 +20,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "init server success\n");
 
     while (!quit) {
-        process_events(server);
+        server.ProcessEvent();
     }
 
     if (log != NULL) {

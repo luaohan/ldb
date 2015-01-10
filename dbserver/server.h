@@ -36,6 +36,7 @@ class Server {
         int Delete(const leveldb::Slice& key);
 
         int Run(const char *config_file);
+        int ProcessEvent();
 
     private:
         leveldb::Options options_;
