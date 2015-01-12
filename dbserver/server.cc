@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <assert.h>
 
 #include "server.h"
 #include "command.h"
@@ -129,8 +130,11 @@ int Server::Run(const char *config_file)
     }
 
     socket_->SetNoblock();
-    
-    event_.AddReadEvent(socket_->GetFd());
+   
+    Event e;
+    e.fd_ = socket_->GetFd();
+    e.ptr_ = socket_;
+    event_.AddReadEvent(e);
 
     if ( config_.daemon_ ) Daemon();
     
@@ -159,15 +163,26 @@ static void SigtermHandler(int sig)
 
 int Server::ProcessEvent()
 {
-    int n = event_.WaitReadEvent(fired_fd);
+    int n = event_.WaitReadEvent(fired_read_, fired_write_);
     if ( n < 0) {
         log_error("WaitReadEvent error:[%s]", strerror(errno));
         return -1;
     }
+    
+    //读事件
+    ProcessReadEvent();
+    
+    //写事件
+    ProcessWriteEvent();
 
-    for (int i = 0; i < n; i++) 
-    {   
-        if ( fired_fd[i] == socket_->GetFd()) {
+    return 0;
+}                                        
+
+void Server::ProcessReadEvent()
+{
+    for (int i = 0; fired_read_[i].ptr_ != NULL; i++) 
+    {
+        if ( (Acceptor *)fired_read_[i].ptr_ == socket_) {
             Socket *link = socket_->Accept();
             if (link == NULL) {
                 log_error("Accept error:[%s]", strerror(errno));
@@ -176,54 +191,81 @@ int Server::ProcessEvent()
 
             link->SetNoblock();
 
-            event_.AddReadEvent(link->GetFd());
-
             Client *cli = new Client(link);
             AddClient(cli);
-
+            
+            Event e;
+            e.fd_ = link->GetFd();
+            e.ptr_ = cli;
+            event_.AddReadEvent(e);
+        
             log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
                     link->GetIp(), link->GetPort(), link->GetFd());
+           
             continue;     
         }   
 
-        Client *cli = FindClient(fired_fd[i]);
+        Client *cli = (Client *)fired_read_[i].ptr_;
 
         //读数据包
         int ret;
         if (cli->data_one_ == false) {
-            //读包头
-            ret = cli->ReadHead();
+            
+            ret = cli->ReadHead();  //读包头
             if (ret == 1 || ret == -1) {
-                //close the client
-                event_.DelReadEvent(cli->link_->GetFd());
-                DeleteClient(cli->link_->GetFd());
-                delete cli;
-
+                DeleteClient(cli);  //close the client
                 continue;
-            }
-
-            if (ret == 2) { //包头不够
+            } else if (ret == 2) {  //包头不够
                 continue;
             }
         }
 
-        //读包体
-        ret = cli->ReadBody();
+        ret = cli->ReadBody(); //读包体
         if (ret == 1 || ret == -1) {
-            //close the client
-            event_.DelReadEvent(cli->link_->GetFd());
-            DeleteClient(cli->link_->GetFd());
-            delete cli;
-
+            
+            DeleteClient(cli);//close the client
+            continue;
+        } else if (ret == 2) { //包体不够
             continue;
         }
 
-        if (ret == 2) { //包体不够
+        ret = cli->cmd_(this, cli);
+        if (ret == -1) {
+            DeleteClient(cli);//close the client
             continue;
         }
-
-        cli->cmd_(this, cli);
     }
+}
 
-    return 0;
-}                                        
+void Server::ProcessWriteEvent()
+{
+    for (int i = 0; fired_write_[i].ptr_ != NULL; i++) 
+    {
+        Client *cli = (Client *)fired_write_[i].ptr_;
+        
+        int ret = cli->WritePacket();
+        if (ret == -1) {
+            DeleteClient(cli);//close the client
+            continue;
+        } else if (ret == 2) { //还没写完
+            continue;
+        }
+
+        //到这里说明已经写完了
+        //移除可写事件
+        Event e;
+        e.fd_ = cli->link_->GetFd();
+        e.ptr_ = cli;
+        event_.DelWriteEvent(e);
+    }
+}
+
+void Server::DeleteClient(Client *c)
+{
+    Event e;
+    e.fd_ = c->link_->GetFd();
+    event_.DelReadEvent(e);
+    
+    DeleteClient(c->link_->GetFd());
+    delete c;
+}

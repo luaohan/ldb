@@ -13,8 +13,8 @@
 class Client {
 
     public:
-        Client(Socket *link):link_(link), data_pos_(0), data_one_(false), 
-             body_len_(0), cmd_(NULL){ }
+        Client(Socket *link):link_(link), data_pos_(0), write_pos_(0), data_one_(false), 
+             body_len_(0), cmd_(NULL), key_len_(0), replay_len_(0){ }
 
         ~Client(){ 
             if (link_ != NULL) {
@@ -29,6 +29,11 @@ class Client {
         int ReadHead();
         int ReadBody();
 
+        //error: return -1
+        //ok: return 0
+        //return 2, 代表没有写完
+        int WritePacket();
+
     public:
         Socket *link_;
 
@@ -39,6 +44,9 @@ class Client {
         int data_pos_;       //如果服务器实际读到的字节小于需要的字节数，
                              //本字段用于记录实际读到的字节，
                              //下次读取将从这里开始
+        int write_pos_;       //如果服务器实际读到的字节小于需要的字节数，
+                             //本字段用于记录实际读到的字节，
+                             //下次读取将从这里开始
 
         bool data_one_; //数据包头是否读够
 
@@ -46,6 +54,8 @@ class Client {
         int key_len_;   //key 的长度
 
         char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
+
+        int replay_len_;
         char replay_[MAX_PACKET_LEN];  //回复缓冲区
 
 };

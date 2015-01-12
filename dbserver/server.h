@@ -10,7 +10,6 @@
 #include <leveldb/slice.h>
 #include <string>
 
-//#include "command.h"
 #include "../net/e_epoll.h"
 #include "../util/config.h"
 
@@ -36,7 +35,12 @@ class Server {
         int Delete(const leveldb::Slice& key);
 
         int Run(const char *config_file);
+
         int ProcessEvent();
+    private:
+        void ProcessReadEvent();
+        void ProcessWriteEvent();
+        void DeleteClient(Client *c);
 
     private:
         leveldb::Options options_;
@@ -48,7 +52,8 @@ class Server {
 
     public:
         Epoll event_;
-        int fired_fd[1024];
+        Event fired_read_[1024];
+        Event fired_write_[1024];
 
         Acceptor *socket_;
 

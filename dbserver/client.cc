@@ -22,13 +22,17 @@ int Client::ReadHead()
             return 1;
         }
 
-        if (ret < 0 && errno != EAGAIN) {
-            log_error("read data error, fd[%d], port[%d], ip[%s]",
-                    link_->GetFd(), link_->GetPort(), link_->GetIp());
-            
-            return -1;
+        if (ret < 0) {
+            if (errno != EAGAIN) {
+                log_error("read data error, fd[%d], port[%d], ip[%s]",
+                        link_->GetFd(), link_->GetPort(), link_->GetIp());
+
+                return -1;
+            }
+
+            ret = 0;
         }
-        
+
         data_pos_ += ret;
         return 2;
     } 
@@ -74,11 +78,15 @@ int Client::ReadBody()
             return 1;
         }
 
-        if (ret < 0 && errno != EAGAIN) {
-            log_error("read data error, fd[%d], port[%d], ip[%s]",
-                    link_->GetFd(), link_->GetPort(), link_->GetIp());
-            
-            return -1;
+        if (ret < 0) {
+            if (errno != EAGAIN) {
+                log_error("read data error, fd[%d], port[%d], ip[%s]",
+                        link_->GetFd(), link_->GetPort(), link_->GetIp());
+
+                return -1;
+            }
+
+            ret = 0;
         }
 
         data_pos_ += ret;
@@ -102,6 +110,42 @@ int Client::ReadBody()
 
     data_one_ = false;
     data_pos_ = 0;
+
+    return 0;
+}
+
+int Client::WritePacket()
+{
+    int ret = link_->WriteData(replay_ + write_pos_, replay_len_ - write_pos_);
+
+    if (ret < replay_len_ - write_pos_) {  
+        if (ret == 0) {
+            log_error("write error, fd[%d], port[%d], ip[%s]",
+                    link_->GetFd(), link_->GetPort(), link_->GetIp());
+
+            return -1;
+        }
+
+        if (ret < 0) {
+            if (ret != EAGAIN) {
+                log_error("read data error, fd[%d], port[%d], ip[%s]",
+                        link_->GetFd(), link_->GetPort(), link_->GetIp());
+
+                return -1;
+            }
+
+            ret = 0;
+        }
+
+        write_pos_ += ret;
+
+        return 2;
+    } 
+
+    //到这里说明所有的东西已经写完
+    //解析读到的内容
+
+    write_pos_ = 0; 
 
     return 0;
 }

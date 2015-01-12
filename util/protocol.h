@@ -13,10 +13,6 @@
 
 #define REPLAY_NO_THE_KEY 4
 
-/*
- *|unsigned int   |unsigned short|unsigned short|
- *|packet_len     |type          |key_len       | key | value |
- * */
 #define MAX_KEY_LEN 65535 //64k
 #define MAX_VAL_LEN 10485760    //10M
 #define ONE_M       1048576    
@@ -24,7 +20,8 @@
 #define HEAD_LEN (sizeof(int) + sizeof(short))
 
 #define MAX_PACKET_LEN sizeof(int) + sizeof(short) + \
-    sizeof(short) + MAX_KEY_LEN + MAX_VAL_LEN 
+    sizeof(int) + MAX_KEY_LEN + MAX_VAL_LEN 
+
 
 //任何时候函数返回整个包的长度
 //调用者需要自己判断返回值是否大于buf_len
@@ -32,9 +29,8 @@
 //调用者需要重新寻找跟大的buf, 来构造数据包,
 //允许key 和 value 同时 为 NULL，这时只有包头
 //也允许其中任意一个为 NULL
-int FillPacket(char *buf, int buf_len, const char *key, int key_len, 
+int FillPacket(char *buf, int buf_len, const char *key, int key_len,
         const char *value, int value_len, short data_type);
-
 
 
 

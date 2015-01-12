@@ -21,28 +21,27 @@ int main()
     }
 
 
-    char key[10];
-    memset(key, '1', 9);
-    key[9] = '\0';
+    char key[1024];
+    memset(key, '1', 1023);
+    key[1023] = '\0';
     
-    char val[10];
-    memset(val, '2', 9);
-    val[9] = '\0';
+    char val[1024 * 1024];
+    memset(val, '2', 1024 * 1024 - 1);
+    val[1024 * 1024 - 1] = '\0';
 
-    std::string true_key(key, 10);
-    std::string true_val(val, 10);
+    std::string true_key(key, 1024);
+    std::string true_val(val, 1024 * 1024);
 
     int t1 = time(NULL);
-#if 0
-    for (int i = 0; i < 100000; i++) {
-        cli.Set(true_key, true_val);
-    }
-#endif
+    //for (int i = 0; i < 100000; i++) {
+    cli.Set(true_key, true_val);
+    //}
     
     std::string get;
     cli.Get(true_key, &get);
     printf("value: %s\n", get.c_str());
 
+#if 0
     cli.Del(true_key);
     int ret = cli.Get(true_key, &get);
     if (ret == 4) {
@@ -50,6 +49,7 @@ int main()
     } else {
         printf("value: %s\n", get.c_str());
     }
+#endif
 
     int t = time(NULL) - t1;
     printf("100000 datas, time is : %d seconds, %d/s\n", t, 100000/t);

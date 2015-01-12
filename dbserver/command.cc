@@ -29,17 +29,21 @@ int SetCommand(Server *s, Client *c)
     }   
 
     ret = FillPacket(c->replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
-    int write_len = c->link_->WriteData(c->replay_, ret);
-    if (write_len < ret) {
-        if (errno != EAGAIN) {
-            //error
-            log_error("write to client error, fd[%d], port[%d], ip[%s]",
-                    c->link_->GetFd(), c->link_->GetPort(), c->link_->GetIp());
+    c->replay_len_ = ret;
+    ret = c->WritePacket();
 
-            return -1;
-        }   
-    }   
+    if (ret == 2) { // 没写完
+        //将写事件加入epoll
+        Event e;
+        e.fd_ = c->link_->GetFd();
+        e.ptr_ = c;
+        
+        s->event_.AddWriteEvent(e);
+    } else if (ret == -1) { //error
+        return -1;
+    }
 
+    //到这里说明已经写完
     return 0;
 }
 
@@ -58,18 +62,23 @@ int GetCommand(Server *s, Client *c)
         //key exist
         ret = FillPacket(c->replay_, MAX_PACKET_LEN, val.c_str(), val.size(), NULL, 0, REPLAY_OK);
     }
+   
+    c->replay_len_ = ret;
+    ret = c->WritePacket();
 
-    int write_len = c->link_->WriteData(c->replay_, ret);
-    if (write_len < ret) {
-        if (errno != EAGAIN) {
-            //error
-            log_error("write to client error, fd[%d], port[%d], ip[%s]",
-                    c->link_->GetFd(), c->link_->GetPort(), c->link_->GetIp());
+    if (ret == 2) { // 没写完
 
-            return -1;
-        }   
-    }   
+        //将写事件加入epoll
+        Event e;
+        e.fd_ = c->link_->GetFd();
+        e.ptr_ = c;
+        
+        s->event_.AddWriteEvent(e);
+    } else if (ret == -1) { //error
+        return -1;
+    }
 
+    //到这里说明已经写完
     return 0;
 }
 
@@ -81,18 +90,21 @@ int DelCommand(Server *s, Client *c)
     s->Delete(key);
 
     int ret = FillPacket(c->replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
+    c->replay_len_ = ret;
+    ret = c->WritePacket();
+
+    if (ret == 2) { // 没写完
+        //将写事件加入epoll
+        Event e;
+        e.fd_ = c->link_->GetFd();
+        e.ptr_ = c;
+        
+        s->event_.AddWriteEvent(e);
+    } else if (ret == -1) { //error
+        return -1;
+    }
     
-    int write_len = c->link_->WriteData(c->replay_, ret);
-    if (write_len < ret) {
-        if (errno != EAGAIN) {
-            //error
-            log_error("write to client error, fd[%d], port[%d], ip[%s]",
-                    c->link_->GetFd(), c->link_->GetPort(), c->link_->GetIp());
-
-            return -1;
-        }   
-    }   
-
+    //到这里说明已经写完
     return 0;
 }
 

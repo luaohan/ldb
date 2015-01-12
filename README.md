@@ -84,20 +84,29 @@ ERROR 和 INFO。
 
 ldb 协议: server 与 client 的交互都将采用本协议格式
 
-协议格式如下：数据包共分两个部分：包头和包体
+==================================================================
+|unsigned int    |unsigned short |unsigned short|
+| packet_len     | type          | key_len      | key | value |
+==================================================================
 
-| 数据总长度 | 数据1   数据2| 
 
-第一个字段为 int 类型，在32 为系统下，占用 4 个字节，
+Set: 命令
+Client: 发送    | packet_len | type | key_len | key | value  |
+Server: 返回    | packet_len | type |     无                 |
+Server 一般只返回成功
 
-第一个字段是数据的总长度，数据的总长度只是包体的大小，而不包含包头的大小，
-第二个字段是数据的内容，即命令部分，命令之间用空格隔开，
+Get：命令
+Client：发送    | packet_len | type | key_len | key | 无     |
+Server：有这个key
+Server：返回    | packet_len | type | value_len | value | 无 |
+Server：没有这个key
+Server：返回    |packet_len  | type |     无                 |
+Server 一般只返回成功
 
-例如，”set a b” 命令将产生如下数据包：
-|7|set a b|，
-
-数字 7 将占用 4 个字节，余下的内容占7个字节.
-
+Del:命令
+Client: 发送    | packet_len | type | key_len | key | 无     | 
+Server: 返回    | packet_len | type |     无                 |
+Server 一般只返回成功
 =============================================================================
 
 本服务器还有很多不完善的地方，有待改进。

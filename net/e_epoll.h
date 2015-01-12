@@ -7,7 +7,10 @@
 #include <sys/epoll.h>
 
 struct Event {
+    Event():fd_(-1), ptr_(NULL){}
 
+    int fd_;
+    void *ptr_;
 };
 
 class Epoll {
@@ -15,13 +18,19 @@ class Epoll {
     public:
         Epoll();
         ~Epoll();
-
+#if 0
         int AddReadEvent(int fd);
         int DelReadEvent(int fd);
+#endif    
+        int AddReadEvent(const Event &e);
+        int AddWriteEvent(const Event &e);
+        int DelWriteEvent(const Event &e);
+        int DelReadEvent(const Event &e);
 
         //ok: return the num of the events 
         //error: return -1
-        int WaitReadEvent(int *fired_fd, int time_out = -1);
+        //int WaitReadEvent(int *fired_fd, int time_out = -1);
+        int WaitReadEvent(Event *r_events, Event *w_events, int time_out = -1);
 
     private:
         int epfd_;
