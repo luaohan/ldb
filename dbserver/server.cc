@@ -14,7 +14,6 @@
 #include <assert.h>
 
 #include "server.h"
-//#include "command.h"
 #include "client.h"
 #include "../net/acceptor.h"
 #include "../util/daemon.h"

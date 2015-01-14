@@ -1,11 +1,13 @@
 // boundary.cc (2015-01-09)
 // Yan Gaofeng (yangaofeng@360.cn)
 
+#include <stdio.h>
 #include <assert.h>
 #include <iostream>
 #include <sstream>
 #include <dbclient/ldbc.h>
 #include "test.h"
+#include "../dbclient/status.h"
 
 using namespace std;
 
@@ -85,18 +87,34 @@ bool Test::Exec(std::string &key, std::string &value)
     //cout << "key size: " << key.size() 
     //    << ", value size: " << value.size() << endl;
 
+    
+    Status status;
+    status = client_->Set(key, value);
+    if (!status.IsOk()) {
+        cout << "set key: " << KEY(key) << " failed" << endl;
+        return false;
+    }
+#if 0
     int rc = client_->Set(key, value);
     if (rc == -1) {
         cout << "set key: " << KEY(key) << " failed" << endl;
         return false;
     }
+#endif
 
     std::string response;
+    status = client_->Get(key, &response);
+    if (!status.IsOk()) {
+        cout << "get key: " << KEY(key) << " failed" << endl;
+        return false;
+    }
+#if 0
     rc = client_->Get(key, &response);
     if (rc == -1) {
         cout << "get key: " << KEY(key) << " failed" << endl;
         return false;
     }
+#endif
     if (response != value) {
         cout << "get key: " << KEY(key) 
             << " failed, invalid result: "
@@ -104,6 +122,21 @@ bool Test::Exec(std::string &key, std::string &value)
         return false;
     }
 
+    status = client_->Del(key);
+    if (!status.IsOk()) {
+        cout << "del key: " << KEY(key) << " failed" << endl;
+        return false;
+    }
+    
+    status = client_->Get(key, &response);
+    if (!status.IsiKeyNotExist()) {
+        cout << "after del, get key: " 
+            << KEY(key) << " should not success" << endl;
+        return false;
+    }
+    
+
+#if 0
     rc = client_->Del(key);
     if (rc == -1) {
         cout << "del key: " << KEY(key) << " failed" << endl;
@@ -116,6 +149,7 @@ bool Test::Exec(std::string &key, std::string &value)
             << KEY(key) << " should not success" << endl;
         return false;
     }
+#endif
 
     return true;
 }

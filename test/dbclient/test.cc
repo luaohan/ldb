@@ -48,6 +48,7 @@ int main()
         printf("Set error, ret : %s\n", s.ToString().c_str());
     }
     //}
+
     std::string get;
     s = cli.Get(true_key, &get);
     if (s.IsKeyNotExist()) {

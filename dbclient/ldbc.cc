@@ -37,6 +37,6 @@ Status Client::Del(const std::string &key)
 
 Status Client::Get(const std::string &key, std::string *value)
 {
-    return Get(key, value);
+    return impl_->Get(key, value);
 }
 

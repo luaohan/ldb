@@ -4,19 +4,17 @@
 #ifndef _LDB_SERVER_H_
 #define _LDB_SERVER_H_
 
+#include <string>
 #include <iostream>
 #include <vector>
 #include <leveldb/db.h>
 #include <leveldb/slice.h>
-#include <string>
 
 #include "../net/e_epoll.h"
 #include "../util/config.h"
 
 class Client;
 class Acceptor;
-
-extern bool quit;
 
 class Server {
 

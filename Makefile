@@ -8,7 +8,7 @@ SRC := 	./dbserver/*.cc \
 		./util/*.cc 
 
 server: $(SRC)
-	g++ -g $^ -o $@ ../opensource/leveldb/libleveldb.a -lpthread -I../opensource/leveldb/include -lsnappy
+	g++ -g $^ -o $@ ./libleveldb.a -lpthread 
 
 .PHONY: clean
 

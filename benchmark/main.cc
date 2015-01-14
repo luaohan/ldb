@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 {
     Client cli;
 
-    if (cli.socket_.Connect("127.0.0.1", 8899) == -1) {
+    if (cli.Connect("127.0.0.1", 8899) == -1) {
         cout << "connect error: " << strerror(errno) << endl;
         return -1;
     }

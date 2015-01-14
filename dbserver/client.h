@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 
-//#include "command.h"
 #include "../util/protocol.h"
 #include "../net/socket.h"
 

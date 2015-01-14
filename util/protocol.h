@@ -23,30 +23,12 @@
     sizeof(int/*short*/) + MAX_KEY_LEN + MAX_VAL_LEN 
 
 
-#if 0
-
-//任何时候函数返回整个包的长度
-//调用者需要自己判断返回值是否大于buf_len
-//如果返回值大于buf_len, 说明数据包没有构造成功，
-//调用者需要重新寻找跟大的buf, 来构造数据包,
-//允许key 和 value 同时 为 NULL，这时只有包头
-//也允许其中任意一个为 NULL
-int FillPacket(char *buf, int buf_len, const char *key, int key_len,
-        const char *value, int value_len, short data_type);
-
-#endif
 
 //|packet_len | type |                       |    or
 //|pakcet_len | type | key_len | key |       |    or
 //|packet_len | type | key_len | key | value |    
-//int FillPacket(char *buf, int buf_len, const char *key, int key_len,
-//        int value_len, short data_type);
 int FillPacket(char *buf, int buf_len, const char *key, int key_len,
         const char *value, int value_len, short data_type);
-
-
-
-
 
 
 #endif

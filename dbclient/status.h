@@ -1,6 +1,9 @@
 // status.h (2015-01-14)
 // Yan Gaofeng (yangaofeng@360.cn)
 
+#ifndef _STATUS_H_
+#define _STATUS_H_
+
 #include <string>
 
 class Status {
@@ -49,3 +52,6 @@ public:
 private:
     int code_;
 };
+
+#endif
+

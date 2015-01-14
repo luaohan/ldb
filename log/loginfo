@@ -1,0 +1,22 @@
+2015-01-14 16:29:29.710 [INFO ] dbserver/server.cc(216)---<create a client:[ip:127.0.0.1],[port:45455],[fd:11]>---
+2015-01-14 16:29:43.281 [INFO ] dbserver/client.cc(25)a clent exit, fd[11], port[45455], ip[127.0.0.1]
+2015-01-14 21:51:48.269 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45457],[fd:11]>---
+2015-01-14 21:51:48.372 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[45457], ip[127.0.0.1]
+2015-01-14 21:56:57.645 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45458],[fd:11]>---
+2015-01-14 21:56:59.137 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[45458], ip[127.0.0.1]
+2015-01-14 21:57:34.966 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45459],[fd:11]>---
+2015-01-14 21:57:35.595 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[45459], ip[127.0.0.1]
+2015-01-14 21:59:55.974 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45460],[fd:11]>---
+2015-01-14 21:59:56.495 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[45460], ip[127.0.0.1]
+2015-01-14 22:01:49.075 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45461],[fd:11]>---
+2015-01-14 22:02:01.114 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[45461], ip[127.0.0.1]
+2015-01-14 22:06:16.736 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45462],[fd:12]>---
+2015-01-14 22:06:18.230 [INFO ] dbserver/client.cc(23)a clent exit, fd[12], port[45462], ip[127.0.0.1]
+2015-01-14 22:06:46.421 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45463],[fd:12]>---
+2015-01-14 22:06:47.074 [INFO ] dbserver/client.cc(23)a clent exit, fd[12], port[45463], ip[127.0.0.1]
+2015-01-14 22:06:58.237 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45464],[fd:12]>---
+2015-01-14 22:06:58.245 [INFO ] dbserver/client.cc(23)a clent exit, fd[12], port[45464], ip[127.0.0.1]
+2015-01-14 22:07:52.237 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45465],[fd:12]>---
+2015-01-14 22:07:52.397 [INFO ] dbserver/client.cc(23)a clent exit, fd[12], port[45465], ip[127.0.0.1]
+2015-01-14 22:12:16.326 [INFO ] dbserver/server.cc(215)---<create a client:[ip:127.0.0.1],[port:45466],[fd:12]>---
+2015-01-14 22:12:25.794 [INFO ] dbserver/client.cc(23)a clent exit, fd[12], port[45466], ip[127.0.0.1]

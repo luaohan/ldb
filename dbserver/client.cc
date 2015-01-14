@@ -10,8 +10,6 @@
 
 #include "client.h"
 #include "server.h"
-//#include "command.h"
-//#include "../net/socket.h"
 #include "../util/protocol.h"
 #include "../util/log.h"
 
