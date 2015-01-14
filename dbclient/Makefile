@@ -1,16 +1,9 @@
-#teat: g++ -o test 1.cc libleveldb.a -lpthread
-
-
-#SRC := $(wildcard *.cc) 
-SRC := ../net/socket.cc \
-	./ldbc.cc \
-	./test.cc \
-	../util/protocol.cc
+SRC := $(wildcard *.cc) $(wildcard internal/*.cc) ../net/socket.cc ../util/protocol.cc
 
 client: $(SRC)
-	        g++ -g $^ -o $@ 
+	        g++ -g $^ -shared -fPIC -o libldbc.so -I./ -I../
 
 .PHONY: clean
 
-clean: 
-	        -rm client 
+clean:
+	-rm client 

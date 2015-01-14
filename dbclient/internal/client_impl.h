@@ -1,15 +1,13 @@
-// ldbc.h (2014-12-25)
-// WangPeng (1245268612@qq.com)
+// client_impl.h (2015-01-14)
+// Yan Gaofeng (yangaofeng@360.cn)
 
-#ifndef _LDBC_H_
-#define _LDBC_H_
+#include <ldbc.h>
+#include <net/socket.h>
 
-#include <status.h>
-
-class Client {
+class Client::Impl {
 public:
-    Client();
-    ~Client();
+    Impl() {}
+    ~Impl() {}
 
     bool Connect(const std::string &ip, int port);
     void Close();
@@ -19,8 +17,7 @@ public:
     Status Get(const std::string &key, std::string *value); 
 
 private:
-    class Impl;
-    Impl *impl_;
+    Socket socket_;
 };
 
-#endif
+
