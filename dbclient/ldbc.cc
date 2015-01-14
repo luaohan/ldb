@@ -17,7 +17,7 @@ Client::~Client()
 
 bool Client::Connect(const std::string &ip, int port)
 {
-    impl_->Connect(ip, port);
+    return impl_->Connect(ip, port);
 }
 
 void Client::Close()

@@ -10,6 +10,11 @@
 #include <util/protocol.h>
 #include <internal/client_impl.h>
 
+Client::Impl::~Impl()
+{
+    Close();
+}
+
 bool Client::Impl::Connect(const std::string &ip, int port)
 {
     int rc = socket_.Connect(ip.c_str(), port);

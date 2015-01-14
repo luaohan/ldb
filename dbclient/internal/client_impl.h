@@ -7,7 +7,7 @@
 class Client::Impl {
 public:
     Impl() {}
-    ~Impl() {}
+    ~Impl();
 
     bool Connect(const std::string &ip, int port);
     void Close();

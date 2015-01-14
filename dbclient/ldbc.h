@@ -4,7 +4,7 @@
 #ifndef _LDBC_H_
 #define _LDBC_H_
 
-#include <status.h>
+#include <dbclient/status.h>
 
 class Client {
 public:
@@ -17,6 +17,10 @@ public:
     Status Set(const std::string &key, const std::string &value);
     Status Del(const std::string &key);
     Status Get(const std::string &key, std::string *value); 
+
+private:
+    Client(const Client &c);
+    Client & operator = (const Client &c);
 
 private:
     class Impl;

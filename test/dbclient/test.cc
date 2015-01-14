@@ -3,14 +3,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include <assert.h>
 
-#include "ldbc.h"
-#include "../util/protocol.h"
+#include <string>
+
+#include <dbclient/ldbc.h>
 
 #define TWO_M 1024 * 1024 * 20 // 20 M
 
@@ -18,7 +17,7 @@ int main()
 {
     Client cli;
 
-    if (cli.socket_.Connect("127.0.0.1", 8899) == -1) {
+    if (cli.Connect("127.0.0.1", 8899) == -1) {
         fprintf(stderr, "connect errno: %s\n", strerror(errno));
         return -1;
     }
@@ -42,24 +41,24 @@ int main()
 
     int t1 = time(NULL);
     //for (int i = 0; i < 100000; i++) {
-    int ret = cli.Set(true_key, true_val);
-    if (ret == 0) {
+    Status s = cli.Set(true_key, true_val);
+    if (s.IsOk()) {
         printf("Set ok\n");
     } else {
-        printf("Set error, ret : %d\n", ret);
+        printf("Set error, ret : %s\n", s.ToString().c_str());
     }
     //}
     std::string get;
-    ret = cli.Get(true_key, &get);
-    if (ret == 4) {
+    s = cli.Get(true_key, &get);
+    if (s.IsKeyNotExist()) {
         printf("key not exit\n");
     } else {
         printf("value_len: %d\n", get.size());
     }
 
     cli.Del(true_key);
-    ret = cli.Get(true_key, &get);
-    if (ret == 4) {
+    s = cli.Get(true_key, &get);
+    if (s.IsKeyNotExist()) {
         printf("key not exit\n");
     } else {
         printf("value: %s\n", get.c_str());
