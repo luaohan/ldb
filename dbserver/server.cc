@@ -14,7 +14,7 @@
 #include <assert.h>
 
 #include "server.h"
-#include "command.h"
+//#include "command.h"
 #include "client.h"
 #include "../net/acceptor.h"
 #include "../util/daemon.h"
@@ -229,7 +229,7 @@ void Server::ProcessReadEvent()
             continue;
         }
 
-        ret = cli->cmd_(this, cli);
+        ret = cli->cmd_(this);
         if (ret == -1) {
             DeleteClient(cli);//close the client
             continue;

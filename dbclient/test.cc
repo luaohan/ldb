@@ -11,6 +11,7 @@
 
 #include "ldbc.h"
 #include "../util/protocol.h"
+#include "../net/socket.h"
 
 #define TWO_M 1024 * 1024 * 20 // 20 M
 

@@ -6,9 +6,14 @@
 
 #include <stdio.h>
 
-#include "command.h"
+//#include "command.h"
 #include "../util/protocol.h"
 #include "../net/socket.h"
+
+class Server;
+class Socket;
+
+typedef int CommandProc(Server *server);
 
 class Client {
 
@@ -35,20 +40,27 @@ class Client {
         //return 2, 代表没有写完
         int WritePacket();
 
+    private:
+        //ok: return 0
+        //error: return -1
+        int SetCommand(Server *server);
+        int GetCommand(Server *server);
+        int DelCommand(Server *server);
+
     public:
         Socket *link_;
 
         char key_[MAX_KEY_LEN];
         char val_[MAX_VAL_LEN];
-        
+
         CommandProc *cmd_;
         int data_pos_;       //如果服务器实际读到的字节小于需要的字节数，
-                             //本字段用于记录实际读到的字节，
-                             //下次读取将从这里开始
-        
+        //本字段用于记录实际读到的字节，
+        //下次读取将从这里开始
+
         int write_pos_;     //如果服务器实际写的字节小于需要写的字节数，
-                            //本字段用于记录实际已经写的字节，
-                            //下次写时将从这里开始
+        //本字段用于记录实际已经写的字节，
+        //下次写时将从这里开始
 
         bool data_one_;     //数据包头是否读够
 

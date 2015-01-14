@@ -21,7 +21,6 @@ class Client {
         //成功返回 0
         //错误返回 -1
         //返回 -2 代表server 退出
-        //如果key or value 太大，返回实际所需的数据包的大小
         int Set(std::string &key, std::string &value); //可以set 两个相同的key,
                                                        //第一个将被覆盖
 
