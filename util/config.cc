@@ -15,7 +15,7 @@
 
 #define LDB_CONFIG_BUF_SIZE 4096
 
-char *ldb_str_trim( char *istr, const char *str)
+char *str_trim( char *istr, const char *str)
 {
     assert(istr != NULL && str != NULL);
 
@@ -125,7 +125,7 @@ int Config::LoadConfigFromStr(char *str)
     strs2tokens(str, "\n", tokens, &line_num);
     for (i = 0; i < line_num; i++)
     {
-        tokens[i] = ldb_str_trim(tokens[i], " ");
+        tokens[i] = str_trim(tokens[i], " ");
         if (tokens[i][0] == '#' || tokens[i] == NULL) {
             continue;
         }

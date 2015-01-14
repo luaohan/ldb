@@ -7,9 +7,9 @@
 #include <string>
 
 //对 istr 左右两端进行修剪，清除其中 str 指定的所有字符
-//比如 ldb_str_trim(xxyyabcyyxy, "xy") 将返回 "abc"  
+//比如 str_trim(xxyyabcyyxy, "xy") 将返回 "abc"  
 //本函数中有 malloc 记住 free
-char *ldb_str_trim( char *istr, const char *str);
+char *str_trim( char *istr, const char *str);
 
 //把str, 用delim 分开，将放在 tokens 数组中
 //并且把最后的空格给去掉, *num 是 token 数组的大小

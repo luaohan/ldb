@@ -111,7 +111,7 @@ bool Test::Exec(std::string &key, std::string &value)
     }
 
     rc = client_->Get(key, &response);
-    if (rc != -1) {
+    if (rc == -1) {
         cout << "after del, get key: " 
             << KEY(key) << " should not success" << endl;
         return false;

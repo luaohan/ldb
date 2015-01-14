@@ -9,6 +9,8 @@
 #include "ldbc.h"
 #include "../util/protocol.h"
 
+#if 0
+
 int Client::Set(std::string &key, std::string &val)
 {
     const char *s_key = key.c_str();
@@ -20,8 +22,8 @@ int Client::Set(std::string &key, std::string &val)
             s_val, val.size(), SET_CMD);
     
     if (len > MAX_PACKET_LEN) { //说明一个缓冲区的长度无法容纳下整个包
-        //这时需要在堆上申请一个大的空间
-        return len; //现在先返回 len
+                                //这时需要在堆上申请一个大的空间
+        return len;             //现在先返回 len
     }
     
     int ret = socket_.BlockWrite(buf, len);
@@ -83,6 +85,133 @@ int Client::Get(std::string &key, std::string *val)
     return 0;
 }
 
+#endif
+
+int Client::Set(std::string &key, std::string &val)
+{
+    const char *s_key = key.c_str();
+    const char *s_val = val.c_str();
+
+    char buf[MAX_PACKET_LEN]; 
+    
+    if (val.size() <= ONE_M) {
+
+        int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(),
+                s_val, val.size(), SET_CMD);
+        
+        int ret = socket_.BlockWrite(buf, len);
+        if (ret < 0) {
+            return -1;
+        }
+
+        ret = socket_.BlockRead(buf, HEAD_LEN);
+        if (ret < 0) {
+            return -1;
+        }
+        if (ret > 0 && ret < HEAD_LEN) {
+            return -2; //server exit
+        }
+        
+        return 0;
+    }
+    
+    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), 
+            NULL, val.size(), SET_CMD);
+    
+    int ret = socket_.BlockWrite(buf, len - val.size());
+    if (ret < 0) {
+        return -1;
+    }
+    
+    ret = socket_.BlockWrite((char *)s_val, val.size());
+    if (ret < 0) {
+        return -1;
+    }
+    
+    ret = socket_.BlockRead(buf, HEAD_LEN);
+    if (ret < 0) {
+        return -1;
+    }
+    if (ret > 0 && ret < HEAD_LEN) {
+        return -2; //server exit
+    }
+
+    return 0;
+
+}
+
+int Client::Get(std::string &key, std::string *val)
+{
+    const char *s_key = key.c_str();
+    char buf[MAX_PACKET_LEN]; 
+
+    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
+    int ret = socket_.BlockWrite(buf, len);
+    if (ret < 0) {
+        return -1;
+    }
+
+    ret = socket_.BlockRead(buf, HEAD_LEN); //读包头
+    if (ret < 0) {
+        return -1;
+    }
+    if (ret > 0 && ret < HEAD_LEN) {
+        return -2; //server exit
+    }
+
+    int packet_len = ntohl(*((int *)&(buf[0])));
+    short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
+    if (packet_type == REPLAY_NO_THE_KEY) {
+        return REPLAY_NO_THE_KEY;
+    }
+
+    int body_len = packet_len - HEAD_LEN;
+
+    if (body_len <= ONE_M) {
+        
+        ret = socket_.BlockRead(buf, body_len); //读包体
+        if (ret < 0) {
+            return -1;
+        }
+        if (ret > 0 && ret < HEAD_LEN) {
+            return -2; //server exit
+        }
+
+        //short value_len = ntohs(*((short *)&(buf[0])));
+        int value_len = body_len - sizeof(short);
+
+        std::string value(&buf[sizeof(short)], value_len);
+        *val = value;
+
+        return 0;
+    }
+
+    char *p = (char *)malloc(body_len);
+    if (p == NULL) {
+        return -1;
+    }
+
+    ret = socket_.BlockRead(p, body_len); //读包体
+    if (ret < 0) {
+        free(p);
+        return -1;
+    }
+    if (ret > 0 && ret < HEAD_LEN) {
+        free(p);
+        return -2; //server exit
+    }
+
+    //short value_len = ntohs(*((short *)&(buf[0])));
+    int value_len = body_len - sizeof(short);
+
+    std::string value(&p[sizeof(short)], value_len);
+    *val = value;
+
+    free(p);
+
+    return 0;
+}
+
 int Client::Del(std::string &key)
 {
     const char *s_key = key.c_str();
@@ -94,7 +223,7 @@ int Client::Del(std::string &key)
     if (ret < 0) {
         return -1;
     }
-    
+
     ret = socket_.BlockRead(buf, HEAD_LEN);
     if (ret < 0) {
         return -1;

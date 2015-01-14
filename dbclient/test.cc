@@ -2,6 +2,7 @@
 // WangPeng (1245268612@qq.com)
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string>
 #include <string.h>
 #include <errno.h>
@@ -10,6 +11,8 @@
 
 #include "ldbc.h"
 #include "../util/protocol.h"
+
+#define TWO_M 1024 * 1024 * 20 // 20 M
 
 int main()
 {
@@ -25,31 +28,42 @@ int main()
     memset(key, '1', 1023);
     key[1023] = '\0';
     
-    char val[1024 * 1024 * 1];
-    memset(val, '2', 1024 * 1024 * 1 - 1);
-    val[1024 * 1024 * 1 - 1] = '\0';
+    //char val[TWO_M];
+    char *val = (char *)malloc(TWO_M);
+    if (val == NULL) {
+        printf("malloc error\n");
+        return -1;
+    }
+    memset(val, '2', TWO_M - 1);
+    val[TWO_M - 1] = '\0';
 
     std::string true_key(key, 1024);
-    std::string true_val(val, 1024 * 1024 * 1 );
+    std::string true_val(val, TWO_M);
 
     int t1 = time(NULL);
     //for (int i = 0; i < 100000; i++) {
-    cli.Set(true_key, true_val);
+    int ret = cli.Set(true_key, true_val);
+    if (ret == 0) {
+        printf("Set ok\n");
+    } else {
+        printf("Set error, ret : %d\n", ret);
+    }
     //}
-    
     std::string get;
-    cli.Get(true_key, &get);
-    //printf("value: %s\n", get.c_str());
-    printf("value_len: %d\n", get.size());
+    ret = cli.Get(true_key, &get);
+    if (ret == 4) {
+        printf("key not exit\n");
+    } else {
+        printf("value_len: %d\n", get.size());
+    }
 
     cli.Del(true_key);
-    int ret = cli.Get(true_key, &get);
+    ret = cli.Get(true_key, &get);
     if (ret == 4) {
         printf("key not exit\n");
     } else {
         printf("value: %s\n", get.c_str());
     }
-
     int t = time(NULL) - t1;
     printf("100000 datas, time is : %d seconds, %d/s\n", t, 100000/t);
 
