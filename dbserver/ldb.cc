@@ -17,15 +17,6 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    fprintf(stderr, "init server success\n");
-
-    while (!quit) {
-        server.ProcessEvent();
-    }
-
-    if (log != NULL) {
-        delete log;
-    }
 
     return 0;
 }            

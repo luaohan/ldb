@@ -24,23 +24,22 @@ class Server {
         Server();
         ~Server();
 
-        void AddClient(Client *cli);
-        void DeleteClient(int fd);
-        Client *FindClient(int fd);
-
-        //ok: return 0
-        //error: return -1
         int Insert(const leveldb::Slice& key, const leveldb::Slice& value);
         int Get(const leveldb::Slice& key, std::string* value);
         int Delete(const leveldb::Slice& key);
 
         int Run(const char *config_file);
 
-        int ProcessEvent();
     private:
+        int ProcessEvent();
         void ProcessReadEvent();
         void ProcessWriteEvent();
         void DeleteClient(Client *c);
+
+        void AddClient(Client *cli);
+        void DeleteClient(int fd);
+        Client *FindClient(int fd);
+
 
     private:
         leveldb::Options options_;

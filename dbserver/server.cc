@@ -14,7 +14,7 @@
 #include <assert.h>
 
 #include "server.h"
-#include "command.h"
+//#include "command.h"
 #include "client.h"
 #include "../net/acceptor.h"
 #include "../util/daemon.h"
@@ -80,7 +80,7 @@ void Server::DeleteClient(int fd)
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->link_->GetFd() == fd) {
+        if ((*i)->fd() == fd) {
             clients_.erase(i);
             break;
         }
@@ -92,7 +92,7 @@ Client *Server::FindClient(int fd)
     std::vector<Client *>::iterator i;
     for (i = clients_.begin(); i != clients_.end(); i++)
     {
-        if ((*i)->link_->GetFd() == fd) {
+        if ((*i)->fd() == fd) {
             return (*i);
         }
     }
@@ -136,7 +136,20 @@ int Server::Run(const char *config_file)
     e.ptr_ = socket_;
     event_.AddReadEvent(e);
 
-    if ( config_.daemon_ ) Daemon();
+    if ( config_.daemon_ ) {
+        Daemon();
+    }
+
+    //fprintf(stderr, "init server success\n");
+
+    while (!quit) {
+        ProcessEvent();
+    }
+
+    if (log != NULL) {
+        delete log;
+    }
+
     
     return 0;
 }
@@ -191,7 +204,7 @@ void Server::ProcessReadEvent()
 
             link->SetNoblock();
 
-            Client *cli = new Client(link);
+            Client *cli = new Client(this, link);
             AddClient(cli);
             
             Event e;
@@ -203,36 +216,12 @@ void Server::ProcessReadEvent()
                     link->GetIp(), link->GetPort(), link->GetFd());
            
             continue;     
-        }   
+        }
 
         Client *cli = (Client *)fired_read_[i].ptr_;
-
-        //读数据包
-        int ret;
-        if (cli->data_one_ == false) {
-            
-            ret = cli->ReadHead();  //读包头
-            if (ret == 1 || ret == -1) {
-                DeleteClient(cli);  //close the client
-                continue;
-            } else if (ret == 2) {  //包头不够
-                continue;
-            }
-        }
-
-        ret = cli->ReadBody(); //读包体
-        if (ret == 1 || ret == -1) {
-            
+        int rc = cli->Read();
+        if (rc == -1) {
             DeleteClient(cli);//close the client
-            continue;
-        } else if (ret == 2) { //包体不够
-            continue;
-        }
-
-        ret = cli->cmd_(this, cli);
-        if (ret == -1) {
-            DeleteClient(cli);//close the client
-            continue;
         }
     }
 }
@@ -242,19 +231,19 @@ void Server::ProcessWriteEvent()
     for (int i = 0; fired_write_[i].ptr_ != NULL; i++) 
     {
         Client *cli = (Client *)fired_write_[i].ptr_;
-        
-        int ret = cli->WritePacket();
-        if (ret == -1) {
+       
+        int rc = cli->Write();
+
+        if (rc == -1) {
             DeleteClient(cli);//close the client
-            continue;
-        } else if (ret == 2) { //还没写完
+        } else if (rc == 2) {
             continue;
         }
 
         //到这里说明已经写完了
         //移除可写事件
         Event e;
-        e.fd_ = cli->link_->GetFd();
+        e.fd_ = cli->fd();
         e.ptr_ = cli;
         event_.DelWriteEvent(e);
     }
@@ -263,9 +252,9 @@ void Server::ProcessWriteEvent()
 void Server::DeleteClient(Client *c)
 {
     Event e;
-    e.fd_ = c->link_->GetFd();
+    e.fd_ = c->fd();
     event_.DelReadEvent(e);
     
-    DeleteClient(c->link_->GetFd());
+    DeleteClient(c->fd());
     delete c;
 }
