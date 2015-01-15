@@ -16,6 +16,7 @@
 //sample
 //virtual node => server ip
 #define VIRUTAL_NODE_COUNT 9
+
 char g_server[VIRUTAL_NODE_COUNT][16] = {
     "192.168.0.1", /*virtual node  0, array index 0*/
     "192.168.0.1", /*virtual node  1, array index 1*/
@@ -49,11 +50,14 @@ void GetServer(const char *key)
 
 int main()
 {
-    GetServer("aa");
-    GetServer("bb");
-    GetServer("cc");
-    GetServer("dd");
-    GetServer("ee");
+    GetServer("1");
+    GetServer("2");
+    GetServer("3");
+    GetServer("4");
+    GetServer("5");
+    GetServer("6");
+    GetServer("7");
+    GetServer("8");
 
    return 0;
 }

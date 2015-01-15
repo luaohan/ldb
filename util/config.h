@@ -8,7 +8,6 @@
 
 //对 istr 左右两端进行修剪，清除其中 str 指定的所有字符
 //比如 str_trim(xxyyabcyyxy, "xy") 将返回 "abc"  
-//本函数中有 malloc 记住 free
 char *str_trim( char *istr, const char *str);
 
 //把str, 用delim 分开，将放在 tokens 数组中

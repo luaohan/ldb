@@ -13,12 +13,14 @@ class Socket {
 
     public:
         Socket();
+        Socket(const char *ip);
         ~Socket();
 
         void Close();
         //ok: return 0
         //error: return -1
         int Connect(const char *ip, int port);
+        int Connect(int port);
 
         void SetFd(int fd) {
             fd_ = fd;

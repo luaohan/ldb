@@ -19,6 +19,17 @@ Socket::Socket():
     
 }
 
+Socket::Socket(const char *ip): 
+    fd_(-1), port_(-1), is_noblocked_(false) 
+{
+    strcpy(ip_, ip);
+    
+    fd_ = socket( AF_INET, SOCK_STREAM, 0 );
+
+    assert(fd_ != -1);
+    
+}
+
 Socket::~Socket()
 {
     Close();
@@ -73,7 +84,6 @@ int Socket::Connect(const char *ip, int port)
 {
     struct sockaddr_in addr;
     int result;
-    int on = 1;
 
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip);
@@ -85,6 +95,25 @@ int Socket::Connect(const char *ip, int port)
     }
     
     strcpy(ip_, ip);
+    port_ = port;
+
+    return 0;
+}
+
+int Socket::Connect(int port)
+{
+    struct sockaddr_in addr;
+    int result;
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip_);
+    addr.sin_port = htons(port);
+    result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
+    if ( result != 0 ) {
+        Close();
+        return -1;
+    }
+    
     port_ = port;
 
     return 0;
