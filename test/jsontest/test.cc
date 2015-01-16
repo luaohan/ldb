@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <list>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -59,6 +60,9 @@ int main()
     return 0;
 }
 
+//return -1, 错误
+//return -2, json 文件格式错误
+//return  0, 正确
 int GetNodeInfo(std::vector<Socket *> &server, const std::string &file_name)
 {
     int fd = open(file_name.c_str(), O_RDONLY);
@@ -77,11 +81,15 @@ int GetNodeInfo(std::vector<Socket *> &server, const std::string &file_name)
     Json::Reader reader;
     Json::Value json_object;
     if (!reader.parse(buf, json_object)) {
-        return -1;
+        return -2;
     }
+    
+    int node_num = json_object["node_num"].asInt();
+    server.resize(node_num);
+    
+    std::list<int> all_nums;
 
     Socket *socket = NULL;
-
     Json::Value array = json_object["node_maps"];
     for (int i = 0; i < array.size(); i++) 
     {
@@ -97,13 +105,41 @@ int GetNodeInfo(std::vector<Socket *> &server, const std::string &file_name)
             Json::Value num_array = obj[(*iter)]["virtual_node"];
             for (int j = 0; j < num_array.size(); j++) 
             {
-                //int num = num_array[j].asInt();
-                server.push_back(socket);
+                int num = num_array[j].asInt();
+                if (num >= node_num) {
+                    return -2;
+                }
+                
+                server[num] = socket;
+
+                all_nums.push_back(num);
             }
         }  
 
     }
-
+   
+    if (all_nums.size() != node_num) {
+        return -2;
+    }
+    
+    all_nums.sort();
+   
+    std::list<int>::iterator i; 
+    i = all_nums.begin();
+    if (*i != 0) { //是否从0 开始
+        return -2;
+    }
+    
+    int before = 0;
+    i++; 
+    for (; i != all_nums.end(); i++) { //是否连续
+       if (*i - before != 1) {
+           return -2;
+       }
+       before = *i;
+    }
+    
+    close(fd);
 
     return 0;
 }
@@ -119,7 +155,8 @@ Socket *GetSocket(const char *key, std::vector<Socket *> &server)
 }
 
 
-unsigned int DJBHash(const unsigned char *buf, int len) {
+unsigned int DJBHash(const unsigned char *buf, int len) 
+{
     static const int hash_function_seed = 5381; 
     unsigned int hash = (unsigned int)hash_function_seed;
     while (len--) {

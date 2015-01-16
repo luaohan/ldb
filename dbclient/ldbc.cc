@@ -2,9 +2,11 @@
 // WangPeng (1245268612@qq.com)
 
 #include <internal/client_impl.h>
+#include <assert.h>
 
-Client::Client() : impl_(new Impl)
+Client::Client(bool hash) : impl_(new Impl(hash))
 {
+    assert(impl_ != NULL);
 }
 
 Client::~Client()
@@ -13,6 +15,11 @@ Client::~Client()
         delete impl_;
         impl_ = NULL;
     }
+}
+
+int Client::Init(const std::string &file_name)
+{
+    return impl_->Init(file_name);
 }
 
 bool Client::Connect(const std::string &ip, int port)

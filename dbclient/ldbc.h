@@ -8,7 +8,7 @@
 
 class Client {
 public:
-    Client();
+    Client(bool hash);
     ~Client();
 
     bool Connect(const std::string &ip, int port);
@@ -17,6 +17,11 @@ public:
     Status Set(const std::string &key, const std::string &value);
     Status Del(const std::string &key);
     Status Get(const std::string &key, std::string *value); 
+
+    //return -1, 错误
+    //return -2, json 文件配置错误
+    //return  0, 成功
+    int Init(const std::string &file_name);
 
 private:
     Client(const Client &c);

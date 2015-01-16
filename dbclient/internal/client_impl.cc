@@ -6,18 +6,45 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <list>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
+#include <json/json.h>
 #include <util/protocol.h>
 #include <internal/client_impl.h>
 
+Client::Impl::Impl(bool hash):
+    socket_(NULL), hash_(hash) 
+{
+    if (!hash_) {
+        socket_ = new Socket();
+        assert(socket_ != NULL);
+    }
+}
+
 Client::Impl::~Impl()
 {
-    Close();
+    if (!hash_) {
+        delete socket_;
+    }
+
+    if (hash_) {
+        int before_fd = -1;
+        std::vector<Socket *>::iterator i;
+        for (i = server_.begin(); i != server_.end(); i++) {
+            if ((*i)->fd() != before_fd) {
+                delete (*i);
+            }
+            before_fd = (*i)->fd();
+        }
+    }
 }
 
 bool Client::Impl::Connect(const std::string &ip, int port)
 {
-    int rc = socket_.Connect(ip.c_str(), port);
+    int rc = socket_->Connect(ip.c_str(), port);
     if (rc == -1) {
         return false;
     }
@@ -27,51 +54,57 @@ bool Client::Impl::Connect(const std::string &ip, int port)
 
 void Client::Impl::Close()
 {
-    socket_.Close();
+    if (!hash_) {
+        socket_->Close();
+    }
 }
 
 Status Client::Impl::Set(const std::string &key, const std::string &val)
 {
+    if (hash_) {
+        socket_ = GetSocket(key);
+    }
+
     const char *s_key = key.c_str();
     const char *s_val = val.c_str();
 
     char buf[MAX_PACKET_LEN]; 
-    
+
     if (val.size() <= ONE_M) {
 
         int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(),
                 s_val, val.size(), SET_CMD);
-        
-        int ret = socket_.BlockWrite(buf, len);
+
+        int ret = socket_->BlockWrite(buf, len);
         if (ret < 0) {
             return Status::Unknown();
         }
 
-        ret = socket_.BlockRead(buf, HEAD_LEN);
+        ret = socket_->BlockRead(buf, HEAD_LEN);
         if (ret < 0) {
             return Status::Unknown();
         }
         if (ret > 0 && ret < HEAD_LEN) {
             return Status::ServerExit();
         }
-        
+
         return Status::Ok();
     }
-    
+
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), 
             NULL, val.size(), SET_CMD);
-    
-    int ret = socket_.BlockWrite(buf, len - val.size());
+
+    int ret = socket_->BlockWrite(buf, len - val.size());
     if (ret < 0) {
         return Status::Unknown();
     }
-    
-    ret = socket_.BlockWrite((char *)s_val, val.size());
+
+    ret = socket_->BlockWrite((char *)s_val, val.size());
     if (ret < 0) {
         return Status::Unknown();
     }
-    
-    ret = socket_.BlockRead(buf, HEAD_LEN);
+
+    ret = socket_->BlockRead(buf, HEAD_LEN);
     if (ret < 0) {
         return Status::Unknown();
     }
@@ -84,16 +117,20 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
 
 Status Client::Impl::Get(const std::string &key, std::string *val)
 {
+    if (hash_) {
+        socket_ = GetSocket(key);
+    }
+
     const char *s_key = key.c_str();
     char buf[MAX_PACKET_LEN]; 
 
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
-    int ret = socket_.BlockWrite(buf, len);
+    int ret = socket_->BlockWrite(buf, len);
     if (ret < 0) {
         return Status::Unknown();
     }
 
-    ret = socket_.BlockRead(buf, HEAD_LEN); //读包头
+    ret = socket_->BlockRead(buf, HEAD_LEN); //读包头
     if (ret < 0) {
         return Status::Unknown();
     }
@@ -111,7 +148,7 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
 
     if (body_len <= ONE_M) {
         
-        ret = socket_.BlockRead(buf, body_len); //读包体
+        ret = socket_->BlockRead(buf, body_len); //读包体
         if (ret < 0) {
             return Status::Unknown();
         }
@@ -133,7 +170,7 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
         return Status::Unknown();
     }
 
-    ret = socket_.BlockRead(p, body_len); //读包体
+    ret = socket_->BlockRead(p, body_len); //读包体
     if (ret < 0) {
         free(p);
         return Status::Unknown();
@@ -156,17 +193,21 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
 
 Status Client::Impl::Del(const std::string &key)
 {
+    if (hash_) {
+        socket_ = GetSocket(key);
+    }
+    
     const char *s_key = key.c_str();
 
     char buf[MAX_PACKET_LEN]; 
 
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, DEL_CMD);
-    int ret = socket_.WriteData(buf, len);
+    int ret = socket_->WriteData(buf, len);
     if (ret < 0) {
         return Status::Unknown();
     }
 
-    ret = socket_.BlockRead(buf, HEAD_LEN);
+    ret = socket_->BlockRead(buf, HEAD_LEN);
     if (ret < 0) {
         return Status::Unknown();
     }
@@ -176,3 +217,133 @@ Status Client::Impl::Del(const std::string &key)
 
     return 0;
 }
+
+int Client::Impl::Init(const std::string &file_name)
+{
+    int fd = open(file_name.c_str(), O_RDONLY);
+    if (fd < 0) {
+        return -1;                         
+    }
+    
+    int BUFSIZE = 1024 * 1024 * 10; //10M
+    char buf[BUFSIZE];
+    int read_size = read(fd, buf, BUFSIZE);
+    if (read_size < 0) {
+        return -1;
+    }
+
+    buf[read_size] = '\0';
+
+    Json::Reader reader;
+    Json::Value json_object;
+    if (!reader.parse(buf, json_object)) {
+        return -2;
+    }
+
+    int node_num = json_object["node_num"].asInt();
+    server_.resize(node_num);
+
+    std::list<int> all_nums;
+    Socket *socket = NULL;
+    Json::Value array = json_object["node_maps"];
+    for (int i = 0; i < array.size(); i++)
+    {
+        Json::Value obj = array[i];
+        Json::Value::Members member = obj.getMemberNames(); 
+        for(Json::Value::Members::iterator iter = member.begin(); iter != member.end(); ++iter) 
+        {
+            std::string ip = obj[(*iter)]["ip"].asString();
+            int port = obj[(*iter)]["port"].asInt();
+
+            socket = new Socket(ip.c_str(), port);
+
+            Json::Value num_array = obj[(*iter)]["virtual_node"];
+            for (int j = 0; j < num_array.size(); j++)
+            {       
+                int num = num_array[j].asInt();
+                if (num >= node_num) {
+                    return -2;
+                }
+
+                server_[num] = socket;
+
+                all_nums.push_back(num);
+            }
+        }
+
+    }   
+
+    if (all_nums.size() != node_num) {
+        return -2;
+    }   
+
+    all_nums.sort();
+
+    std::list<int>::iterator i;
+    i = all_nums.begin();
+    if (*i != 0) { //是否从0 开始
+        return -2;
+    } 
+
+    int before = 0;
+    i++; 
+    for (; i != all_nums.end(); i++) { //是否连续
+        if (*i - before != 1) {
+            return -2;
+        }
+        before = *i;
+    }
+
+    close(fd);
+
+    bool ret = Connect();
+    if (ret == false) {
+        return -1;
+    }
+    
+    hash_ = true;
+
+    return 0;       
+}
+
+bool Client::Impl::Connect()
+{
+    std::vector<Socket *>::iterator i;
+    int ret;
+    int before_fd = -1;
+    for (i = server_.begin(); i != server_.end(); i++) {
+        if ((*i)->fd() != before_fd) {
+            ret = (*i)->Connect();
+            if (ret == -1) {
+                return false;
+            }
+        }
+
+        before_fd = (*i)->fd();
+    }
+
+    return true;
+}
+
+
+Socket *Client::Impl::GetSocket(const std::string &key)
+{
+    int virtual_node =
+        DJBHash((const unsigned char *)key.c_str(), key.size()) % server_.size();
+
+    Socket *s = server_[virtual_node];
+
+    return s;
+}
+
+
+unsigned int Client::Impl::DJBHash(const unsigned char *buf, int len)
+{
+    static const int hash_function_seed = 5381;
+    unsigned int hash = (unsigned int)hash_function_seed;
+    while (len--) {
+        hash = ((hash << 5) + hash) + (tolower(*buf++)); /* hash * 33 + c */
+    }
+
+    return hash;
+}                

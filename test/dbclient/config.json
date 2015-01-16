@@ -1,0 +1,15 @@
+{   
+    "node_num"  : 3,
+
+    "node_maps" : [
+        { 
+            "server_1" : {
+                "ip" : "127.0.0.1",
+                "port" : 8899,
+                "virtual_node" : [0, 2, 1] 
+            }
+        }
+    ]
+
+}
+ 

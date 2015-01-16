@@ -15,14 +15,26 @@
 
 int main()
 {
-    Client cli;
+#if 0   
+    Client cli(false); //非分布式
 
     if (cli.Connect("127.0.0.1", 8899) == -1) {
         fprintf(stderr, "connect errno: %s\n", strerror(errno));
         return -1;
     }
+#endif
 
-
+    Client cli(true); //非分布式
+    std::string file_name = "config.json";
+    int ret = cli.Init(file_name);
+    if (ret == -1) {
+        fprintf(stderr, "connect errno: %s\n", strerror(errno));
+        return -1;
+    } else if (ret == -2) {
+        fprintf(stderr, "configfile error\n");
+        return -1;
+    }
+    
     char key[1024];
     memset(key, '1', 1023);
     key[1023] = '\0';
