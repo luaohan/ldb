@@ -19,8 +19,8 @@ Socket::Socket():
     
 }
 
-Socket::Socket(const char *ip): 
-    fd_(-1), port_(-1), is_noblocked_(false) 
+Socket::Socket(const char *ip, int port): 
+    fd_(-1), port_(port), is_noblocked_(false) 
 {
     strcpy(ip_, ip);
     
@@ -43,22 +43,22 @@ void Socket::Close()
     }
 }
 
-int Socket::GetFd() const
+int Socket::fd() const
 {
     return fd_;
 }
 
-int Socket::GetPort() const
+int Socket::port() const
 {
     return port_;
 }
 
-char *Socket::GetIp() 
+char *Socket::ip() 
 {
     return ip_;
 }
 
-int Socket::SetNoblock()
+int Socket::set_noblock()
 {
     int flags;
 
@@ -100,32 +100,30 @@ int Socket::Connect(const char *ip, int port)
     return 0;
 }
 
-int Socket::Connect(int port)
+int Socket::Connect()
 {
     struct sockaddr_in addr;
     int result;
 
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip_);
-    addr.sin_port = htons(port);
+    addr.sin_port = htons(port_);
     result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
     if ( result != 0 ) {
         Close();
         return -1;
     }
     
-    port_ = port;
-
     return 0;
 }
 
-void Socket::SetReuseAddr()
+void Socket::set_reuseAddr()
 {
     int on = 1;                          
     setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
 }
 
-void Socket::SetLinger()
+void Socket::set_linger()
 {
     struct linger optval;
     optval.l_onoff = 1;
@@ -133,17 +131,17 @@ void Socket::SetLinger()
     setsockopt(fd_, SOL_SOCKET, SO_LINGER, (char *)&optval, sizeof(struct linger));
 }
 
-void Socket::SetRcvBuf(int size)
+void Socket::set_rcv_buf(int size)
 {
     setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, (char *)&size, sizeof(size));
 }
 
-void Socket::SetSndBuf(int size)
+void Socket::set_snd_buf(int size)
 {
     setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(size));
 }
 
-void Socket::SetNoNagle()
+void Socket::set_no_nagle()
 {
     int opt;
     socklen_t optlen;

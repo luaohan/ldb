@@ -20,7 +20,7 @@ int Client::ReadHead()
     if (ret < HEAD_LEN - data_pos_) {  
         if (ret == 0) {
             log_info("a clent exit, fd[%d], port[%d], ip[%s]",
-                    link_->GetFd(), link_->GetPort(), link_->GetIp());
+                    link_->fd(), link_->port(), link_->ip());
 
             return 1;
         }
@@ -28,7 +28,7 @@ int Client::ReadHead()
         if (ret < 0) {
             if (errno != EAGAIN) {
                 log_error("read data error, fd[%d], port[%d], ip[%s]",
-                        link_->GetFd(), link_->GetPort(), link_->GetIp());
+                        link_->fd(), link_->port(), link_->ip());
 
                 return -1;
             }
@@ -50,7 +50,7 @@ int Client::ReadHead()
             && packet_type != DEL_CMD) {
         //error cmd
         log_error("error cmd, fd[%d], port[%d], ip[%s]",
-                link_->GetFd(), link_->GetPort(), link_->GetIp());
+                link_->fd(), link_->port(), link_->ip());
 
         return -1;
     }
@@ -73,7 +73,7 @@ int Client::ReadBody()
         if (ret < body_len_ - data_pos_) {
             if (ret == 0) {
                 log_info("a clent exit, fd[%d], port[%d], ip[%s]",
-                        link_->GetFd(), link_->GetPort(), link_->GetIp());
+                        link_->fd(), link_->port(), link_->ip());
 
                 return 1;
             }
@@ -81,7 +81,7 @@ int Client::ReadBody()
             if (ret < 0) {
                 if (errno != EAGAIN) {
                     log_error("read data error, fd[%d], port[%d], ip[%s]",
-                            link_->GetFd(), link_->GetPort(), link_->GetIp());
+                            link_->fd(), link_->port(), link_->ip());
 
                     return -1;
                 }
@@ -126,7 +126,7 @@ int Client::ReadBody()
     if (ret < body_len_ - data_pos_) {
         if (ret == 0) {
             log_info("a clent exit, fd[%d], port[%d], ip[%s]",
-                    link_->GetFd(), link_->GetPort(), link_->GetIp());
+                    link_->fd(), link_->port(), link_->ip());
 
             return 1;
         }
@@ -134,7 +134,7 @@ int Client::ReadBody()
         if (ret < 0) {
             if (errno != EAGAIN) {
                 log_error("read data error, fd[%d], port[%d], ip[%s]",
-                        link_->GetFd(), link_->GetPort(), link_->GetIp());
+                        link_->fd(), link_->port(), link_->ip());
 
                 return -1;
             }
@@ -189,7 +189,7 @@ int Client::WritePacket()
     if (ret < replay_len_ - write_pos_) {  
         if (ret == 0) {
             log_error("write error, fd[%d], port[%d], ip[%s]",
-                    link_->GetFd(), link_->GetPort(), link_->GetIp());
+                    link_->fd(), link_->port(), link_->ip());
 
             return -1;
         }
@@ -197,7 +197,7 @@ int Client::WritePacket()
         if (ret < 0) {
             if (ret != EAGAIN) {
                 log_error("read data error, fd[%d], port[%d], ip[%s]",
-                        link_->GetFd(), link_->GetPort(), link_->GetIp());
+                        link_->fd(), link_->port(), link_->ip());
 
                 return -1;
             }
@@ -258,7 +258,7 @@ int Client::SetCommand()
     if (ret == 2) { // 没写完
         //将写事件加入epoll
         Event e;
-        e.fd_ = link_->GetFd();
+        e.fd_ = link_->fd();
         e.ptr_ = this;
         
         server_->event_.AddWriteEvent(e);
@@ -310,7 +310,7 @@ int Client::GetCommand()
 
         //将写事件加入epoll
         Event e;
-        e.fd_ = link_->GetFd();
+        e.fd_ = link_->fd();
         e.ptr_ = this;
         
         server_->event_.AddWriteEvent(e);
@@ -333,7 +333,7 @@ int Client::DelCommand()
     if (ret == 2) { // 没写完
         //将写事件加入epoll
         Event e;
-        e.fd_ = link_->GetFd();
+        e.fd_ = link_->fd();
         e.ptr_ = this;
         
         server_->event_.AddWriteEvent(e);

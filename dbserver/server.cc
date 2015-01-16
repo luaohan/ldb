@@ -128,10 +128,10 @@ int Server::Run(const char *config_file)
         return -1;
     }
 
-    socket_->SetNoblock();
+    socket_->set_noblock();
    
     Event e;
-    e.fd_ = socket_->GetFd();
+    e.fd_ = socket_->fd();
     e.ptr_ = socket_;
     event_.AddReadEvent(e);
 
@@ -201,18 +201,18 @@ void Server::ProcessReadEvent()
                 continue;
             }
 
-            link->SetNoblock();
+            link->set_noblock();
 
             Client *cli = new Client(this, link);
             AddClient(cli);
             
             Event e;
-            e.fd_ = link->GetFd();
+            e.fd_ = link->fd();
             e.ptr_ = cli;
             event_.AddReadEvent(e);
         
             log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
-                    link->GetIp(), link->GetPort(), link->GetFd());
+                    link->ip(), link->port(), link->fd());
            
             continue;     
         }

@@ -27,27 +27,27 @@ Acceptor::~Acceptor()
     }
 }
 
-int Acceptor::GetFd() const
+int Acceptor::fd() const
 {
     return fd_;
 }
 
-int Acceptor::GetBacklog() const
+int Acceptor::backlog() const
 {
     return backlog_;
 }
 
-int Acceptor::GetPort() const
+int Acceptor::port() const
 {
     return port_;
 }
 
-char *Acceptor::GetIp()
+char *Acceptor::ip()
 {
     return ip_;
 }
 
-int Acceptor::SetNoblock()
+int Acceptor::set_noblock()
 {
     int flags;
     if ((flags = fcntl(fd_, F_GETFL, NULL)) < 0) {
@@ -132,14 +132,14 @@ ReAccept:
         return NULL;
     }
 
-    socket->SetFd(fd);
-    socket->SetPort(ntohs(remote.sin_port));
-    strcpy( socket->GetIp(), inet_ntoa(remote.sin_addr));
+    socket->set_fd(fd);
+    socket->set_port(ntohs(remote.sin_port));
+    strcpy( socket->ip(), inet_ntoa(remote.sin_addr));
    
     return socket;
 }
 
-void Acceptor::SetReuseAddr()
+void Acceptor::set_reuseAddr()
 {
     int on = 1;
     setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));

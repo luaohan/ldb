@@ -129,7 +129,7 @@ bool Test::Exec(std::string &key, std::string &value)
     }
     
     status = client_->Get(key, &response);
-    if (!status.IsiKeyNotExist()) {
+    if (!status.IsKeyNotExist()) {
         cout << "after del, get key: " 
             << KEY(key) << " should not success" << endl;
         return false;

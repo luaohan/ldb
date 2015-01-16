@@ -13,36 +13,36 @@ class Socket {
 
     public:
         Socket();
-        Socket(const char *ip);
+        Socket(const char *ip, int port);
         ~Socket();
 
         void Close();
         //ok: return 0
         //error: return -1
         int Connect(const char *ip, int port);
-        int Connect(int port);
+        int Connect();
 
-        void SetFd(int fd) {
+        void set_fd(int fd) {
             fd_ = fd;
         }
         
-        void SetPort(int port) {
+        void set_port(int port) {
             port_ = port;
         }
 
-        int GetFd() const;
-        int GetPort() const;
-        char *GetIp(); 
+        int fd() const;
+        int port() const;
+        char *ip(); 
 
         bool IsNoblocked() const;
     
         //if uses these, call before Connect()
-        int SetNoblock();
-        void SetReuseAddr(); 
-        void SetLinger();
-        void SetNoNagle();
-        void SetRcvBuf(int size);
-        void SetSndBuf(int size);
+        int set_noblock();
+        void set_reuseAddr(); 
+        void set_linger();
+        void set_no_nagle();
+        void set_rcv_buf(int size);
+        void set_snd_buf(int size);
 
         //just like read() and write()
         //ok: return the size of read

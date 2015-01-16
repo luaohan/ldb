@@ -25,16 +25,16 @@ class Acceptor {
         Socket *Accept();
        
         void Close();
-        int GetBacklog() const;
-        int GetFd() const;
-        int GetPort() const;
-        char *GetIp(); //error: return NULL
+        int backlog() const;
+        int fd() const;
+        int port() const;
+        char *ip(); //error: return NULL
        
         bool IsNoblocked() const;
        
         //if uses these, call before Listen()
-        int SetNoblock();
-        void SetReuseAddr();
+        int set_noblock();
+        void set_reuseAddr();
     
     private:
         int fd_;

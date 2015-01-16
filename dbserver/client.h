@@ -35,7 +35,7 @@ class Client {
 
         int Read();
         int Write();
-        int fd() const { return link_->GetFd(); }
+        int fd() const { return link_->fd(); }
 
     private:
         //ok: return 0

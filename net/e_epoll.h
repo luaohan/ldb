@@ -18,10 +18,7 @@ class Epoll {
     public:
         Epoll();
         ~Epoll();
-#if 0
-        int AddReadEvent(int fd);
-        int DelReadEvent(int fd);
-#endif    
+        
         int AddReadEvent(const Event &e);
         int AddWriteEvent(const Event &e);
         int DelWriteEvent(const Event &e);
