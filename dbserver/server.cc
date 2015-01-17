@@ -97,7 +97,7 @@ Client *Server::FindClient(int fd)
     }
 }
 
-int Server::Run(const char *config_file)
+int Server::Run(const char *config_file, const char *ip, int port)
 {
     SigProcess();
 
@@ -124,12 +124,26 @@ int Server::Run(const char *config_file)
     }
 
     int backlog = 512;
-    if (socket_->Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
-        return -1;
+    if (ip != NULL && port != 0) {
+        if (socket_->Listen(ip, port, backlog) < 0) {
+            return -1;
+        }
+    } else if (ip != NULL && port == 0) {
+        if (socket_->Listen(ip, config_.server_port_, backlog) < 0) {
+            return -1;
+        }
+    } else if (ip == NULL && port != 0) {
+        if (socket_->Listen("0.0.0.0", port, backlog) < 0) {
+            return -1;
+        }
+    } else if (ip == NULL && port == 0) {
+        if (socket_->Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
+            return -1;
+        }
     }
 
     socket_->set_noblock();
-   
+
     Event e;
     e.fd_ = socket_->fd();
     e.ptr_ = socket_;

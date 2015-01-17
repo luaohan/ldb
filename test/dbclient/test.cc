@@ -24,7 +24,7 @@ int main()
     }
 #endif
 
-    Client cli(true); //非分布式
+    Client cli(true); //分布式
     std::string file_name = "config.json";
     int ret = cli.Init(file_name);
     if (ret == -1) {

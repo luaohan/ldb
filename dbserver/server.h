@@ -26,7 +26,7 @@ class Server {
         int Get(const leveldb::Slice& key, std::string* value);
         int Delete(const leveldb::Slice& key);
 
-        int Run(const char *config_file);
+        int Run(const char *config_file, const char *ip, int port);
 
     private:
         int ProcessEvent();
