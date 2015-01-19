@@ -1,9 +1,38 @@
-SRC := $(wildcard *.cc) $(wildcard internal/*.cc) ../net/socket.cc ../util/protocol.cc
+SRC=$(wildcard *.cc) $(wildcard internal/*.cc)
+OBJ=$(SRC:%.cc=%.o)
+TARGET:=libldbclient.so
 
-libldbc.so: $(SRC)
-	g++ -g $^ -shared -fPIC -o $@ -I./ -I../ -I/home/wangpeng/jsoncpp-src-0.5.0/include /usr/include/jsoncpp/libjson.a
+
+CXXFLAGS := -g -O0 -fPIC \
+	-I./ \
+	-I../ \
+	-I../../opensource/jsoncpp/include
+
+LDFLAGS := -L../net \
+	-Wl,-rpath=../net \
+	-lldbnet \
+	-L../util \
+	-Wl,-rpath=../util \
+	-lldbutil \
+	-L../../opensource/jsoncpp/build/debug/src/lib_json/ \
+	-Wl,-rpath=../../opensource/jsoncpp/build/debug/src/lib_json/ \
+	-ljsoncpp
+
+$(TARGET): $(OBJ) 
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $^ -o $@
+
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) $< -c -o $@
+
+%.d: %.cc
+	@$(CXX) -MM $(CXXFLAGS) $< > $@.$$$$; \
+		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+		rm -f $@.$$$$
+
+sinclude $(SRC:.cc=.d)
 
 .PHONY: clean
 
 clean:
-	-rm libldbc.so
+	@rm $(TARGET) $(OBJ) *.d -f
+

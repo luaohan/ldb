@@ -2,5 +2,7 @@
 /db_directory/
 *.a
 *.so
+*.o
+*.d
 libleveldb.a
 server

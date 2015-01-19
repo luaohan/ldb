@@ -1,8 +1,0 @@
-2015-01-18 10:54:53.462 [INFO ] dbserver/server.cc(229)---<create a client:[ip:192.168.0.1],[port:49087],[fd:11]>---
-2015-01-18 10:55:03.761 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[49087], ip[192.168.0.1]
-2015-01-18 10:57:05.830 [INFO ] dbserver/server.cc(229)---<create a client:[ip:192.168.0.1],[port:49089],[fd:11]>---
-2015-01-18 10:57:20.891 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[49089], ip[192.168.0.1]
-2015-01-18 10:57:30.510 [INFO ] dbserver/server.cc(229)---<create a client:[ip:192.168.0.1],[port:49091],[fd:11]>---
-2015-01-18 10:57:48.378 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[49091], ip[192.168.0.1]
-2015-01-18 11:01:37.349 [INFO ] dbserver/server.cc(229)---<create a client:[ip:192.168.0.1],[port:49093],[fd:11]>---
-2015-01-18 11:01:53.156 [INFO ] dbserver/client.cc(23)a clent exit, fd[11], port[49093], ip[192.168.0.1]

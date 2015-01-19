@@ -1,16 +1,22 @@
-#teat: g++ -o test 1.cc libleveldb.a -lpthread
+all: util net dbserver dbclient
+	@echo "make complete"
 
+util:
+	make -C util
 
-#SRC := $(wildcard *.cc) 
+net: util
+	make -C net
 
-SRC := 	./dbserver/*.cc \
-		./net/*.cc \
-		./util/*.cc 
+dbserver: util net
+	make -C dbserver
 
-server: $(SRC)
-	g++ -g $^ -o $@ ./libleveldb.a -lpthread 
+dbclient: util net
+	make -C dbclient
 
-.PHONY: clean
+.PHONY: clean util
 
 clean: 
-	-rm server
+	make clean -C dbserver
+	make clean -C dbclient
+	make clean -C net
+	make clean -C util 

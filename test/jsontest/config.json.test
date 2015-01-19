@@ -1,0 +1,28 @@
+{
+    "node_count" : 9,
+    "node_maps" : [
+        { 
+            "server_1" : {
+                "ip" : "192.168.0.1",
+                "port" : 9987,
+                "virtual_node" : [0, 1, 2] 
+            }
+        },
+        { 
+            "server_2" : {
+                "ip" : "192.168.0.2",
+                "port" : 9987,
+                "virtual_node" : [3, 4, 5] 
+            }
+        },
+        {
+            "server_3" : {
+                "ip" : "192.168.0.3",
+                "port" : 9987,
+                "virtual_node" : [6, 7, 8]
+            }
+        }
+    ]
+
+}
+ 
