@@ -3,6 +3,7 @@
 /db_directory/
 dbserver/db_directory/
 dbserver/log/
+dbserver/dbserver
 *.a
 *.so
 *.o
