@@ -13,11 +13,12 @@
 #include <signal.h>
 #include <assert.h>
 
-#include "server.h"
-#include "client.h"
-#include "../net/acceptor.h"
-#include "../util/daemon.h"
-#include "../util/log.h"
+#include <net/acceptor.h>
+#include <util/daemon.h>
+#include <util/log.h>
+
+#include <dbserver/server.h>
+#include <dbserver/client.h>
 
 bool quit = false;
 

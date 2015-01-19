@@ -1,5 +1,7 @@
 /log/
 /db_directory/
+dbserver/db_directory/
+dbserver/log/
 *.a
 *.so
 *.o

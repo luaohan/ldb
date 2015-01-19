@@ -3,7 +3,7 @@ OBJ=$(SRC:%.cc=%.o)
 TARGET:=libldbnet.so
 
 
-CXXFLAGS := -g -O0 -fPIC
+CXXFLAGS := -g -O0 -fPIC -I../
 LDFLAGS := 
 
 $(TARGET): $(OBJ) 

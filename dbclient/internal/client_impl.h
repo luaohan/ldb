@@ -1,9 +1,9 @@
 // client_impl.h (2015-01-14)
 // Yan Gaofeng (yangaofeng@360.cn)
 
-#include <assert.h>
 #include <vector>
-#include <ldbc.h>
+
+#include <dbclient/client.h>
 #include <net/socket.h>
 
 class Client::Impl {

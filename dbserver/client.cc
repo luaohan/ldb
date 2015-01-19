@@ -8,10 +8,10 @@
 
 #include <leveldb/slice.h>
 
-#include "client.h"
-#include "server.h"
-#include "../util/protocol.h"
-#include "../util/log.h"
+#include <util/protocol.h>
+#include <util/log.h>
+#include <dbserver/client.h>
+#include <dbserver/server.h>
 
 int Client::ReadHead()
 {
