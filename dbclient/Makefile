@@ -14,8 +14,8 @@ LDFLAGS := -L../net \
 	-L../util \
 	-Wl,-rpath=../util \
 	-lldbutil \
-	-L../../opensource/jsoncpp/build/debug/src/lib_json/ \
-	-Wl,-rpath=../../opensource/jsoncpp/build/debug/src/lib_json/ \
+	-L../../opensource/jsoncpp/ \
+	-Wl,-rpath=../../opensource/jsoncpp/ \
 	-ljsoncpp
 
 $(TARGET): $(OBJ) 

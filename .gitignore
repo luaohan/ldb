@@ -1,4 +1,5 @@
 /log/
+/log/loginfo
 /db_directory/
 dbserver/db_directory/
 dbserver/log/
