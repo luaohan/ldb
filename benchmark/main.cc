@@ -14,15 +14,14 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-#if 0
     Client cli(false); //非分布式
 
     if (cli.Connect("127.0.0.1", 8899) == -1) {
         cout << "connect error: " << strerror(errno) << endl;
         return -1;
     }
-#endif
     
+#if 0
     Client cli(true); //分布式
     std::string file_name = "config.json";
 
@@ -36,6 +35,7 @@ int main(int argc, char *argv[])
     }   
     
     printf("init ok\n");
+#endif
 
     Test t(&cli);
     t.Run();

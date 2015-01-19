@@ -16,9 +16,9 @@ private:
         kBinary
     };
 
-    bool Exec(std::string &key, std::string &value);
+    bool Exec(std::string &key, std::string &value, bool only_set = false);
     bool Basic(std::string &key, std::string &value);
-    bool Binary(int key_len, int value_len);
+    bool Binary(int key_len, int value_len, bool only_set = false);
     bool Batch(int count, int key_len, int value_len);
 
     std::string Hex(const std::string &str);
