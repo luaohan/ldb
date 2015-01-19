@@ -6,14 +6,14 @@
             "server_1" : {
                 "ip" : "192.168.0.1",
                 "port" : 8881,
-                "virtual_node" : [0, 2, 1] 
+                "virtual_node" : [0, 5, 1] 
             }
         },
         { 
             "server_2" : {
                 "ip" : "192.168.0.2",
                 "port" : 8882,
-                "virtual_node" : [4, 5, 3] 
+                "virtual_node" : [4, 2, 3] 
             }
         }
     ]

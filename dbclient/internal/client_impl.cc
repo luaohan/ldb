@@ -31,13 +31,9 @@ Client::Impl::~Impl()
     }
 
     if (hash_) {
-        int before_fd = -1;
         std::vector<Socket *>::iterator i;
-        for (i = server_.begin(); i != server_.end(); i++) {
-            if ((*i)->fd() != before_fd) {
-                delete (*i);
-            }
-            before_fd = (*i)->fd();
+        for (i = real_server_.begin(); i != real_server_.end(); i++) {
+            delete (*i);
         }
     }
 }
@@ -226,9 +222,16 @@ int Client::Impl::Init(const std::string &file_name)
     }
     
     int BUFSIZE = 1024 * 1024 * 10; //10M
-    char buf[BUFSIZE];
+    char *buf = (char *)malloc(BUFSIZE);
+    if (buf == NULL) {
+        close(fd);
+        return -1;
+    }
+    
     int read_size = read(fd, buf, BUFSIZE);
     if (read_size < 0) {
+        free(buf);
+        close(fd);
         return -1;
     }
 
@@ -237,11 +240,18 @@ int Client::Impl::Init(const std::string &file_name)
     Json::Reader reader;
     Json::Value json_object;
     if (!reader.parse(buf, json_object)) {
+        free(buf);
+        close(fd);
         return -2;
     }
 
     int node_num = json_object["node_num"].asInt();
-    server_.resize(node_num);
+    if (node_num <= 0 || node_num > 1000) {
+        free(buf);
+        close(fd);
+        return -1;
+    }
+    virtual_server_.resize(node_num);
 
     std::list<int> all_nums;
     Socket *socket = NULL;
@@ -250,30 +260,36 @@ int Client::Impl::Init(const std::string &file_name)
     {
         Json::Value obj = array[i];
         Json::Value::Members member = obj.getMemberNames(); 
-        for(Json::Value::Members::iterator iter = member.begin(); iter != member.end(); ++iter) 
+        Json::Value::Members::iterator iter = member.begin();
+
+        for(; iter != member.end(); ++iter) 
         {
             std::string ip = obj[(*iter)]["ip"].asString();
             int port = obj[(*iter)]["port"].asInt();
 
             socket = new Socket(ip.c_str(), port);
+            real_server_.push_back(socket);
 
             Json::Value num_array = obj[(*iter)]["virtual_node"];
             for (int j = 0; j < num_array.size(); j++)
             {       
                 int num = num_array[j].asInt();
                 if (num >= node_num) {
+                    free(buf);
+                    close(fd);
                     return -2;
                 }
 
-                server_[num] = socket;
+                virtual_server_[num] = socket;
 
                 all_nums.push_back(num);
             }
         }
-
     }   
 
     if (all_nums.size() != node_num) {
+        free(buf);
+        close(fd);
         return -2;
     }   
 
@@ -282,6 +298,8 @@ int Client::Impl::Init(const std::string &file_name)
     std::list<int>::iterator i;
     i = all_nums.begin();
     if (*i != 0) { //是否从0 开始
+        free(buf);
+        close(fd);
         return -2;
     } 
 
@@ -289,19 +307,24 @@ int Client::Impl::Init(const std::string &file_name)
     i++; 
     for (; i != all_nums.end(); i++) { //是否连续
         if (*i - before != 1) {
+            free(buf);
+            close(fd);
             return -2;
         }
         before = *i;
     }
 
-    close(fd);
-
     bool ret = Connect();
     if (ret == false) {
+        free(buf);
+        close(fd);
         return -1;
     }
     
     hash_ = true;
+    
+    close(fd);
+    free(buf);
 
     return 0;       
 }
@@ -310,16 +333,11 @@ bool Client::Impl::Connect()
 {
     std::vector<Socket *>::iterator i;
     int ret;
-    int before_fd = -1;
-    for (i = server_.begin(); i != server_.end(); i++) {
-        if ((*i)->fd() != before_fd) {
-            ret = (*i)->Connect();
-            if (ret == -1) {
-                return false;
-            }
+    for (i = real_server_.begin(); i != real_server_.end(); i++) {
+        ret = (*i)->Connect();
+        if (ret == -1) {
+            return false;
         }
-
-        before_fd = (*i)->fd();
     }
 
     return true;
@@ -329,9 +347,9 @@ bool Client::Impl::Connect()
 Socket *Client::Impl::GetSocket(const std::string &key)
 {
     int virtual_node =
-        DJBHash((const unsigned char *)key.c_str(), key.size()) % server_.size();
+        DJBHash((const unsigned char *)key.c_str(), key.size()) % virtual_server_.size();
 
-    Socket *s = server_[virtual_node];
+    Socket *s = virtual_server_[virtual_node];
 
     return s;
 }

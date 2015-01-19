@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
     
     Client cli(true); //分布式
     std::string file_name = "config.json";
+
     int ret = cli.Init(file_name);
     if (ret == -1) {
         fprintf(stderr, "connect errno: %s\n", strerror(errno));
@@ -33,6 +34,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "configfile error\n");
         return -1; 
     }   
+    
+    printf("init ok\n");
 
     Test t(&cli);
     t.Run();

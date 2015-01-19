@@ -30,7 +30,8 @@ private:
 
 private:
     Socket *socket_;
-    std::vector<Socket *> server_;
+    std::vector<Socket *> real_server_;
+    std::vector<Socket *> virtual_server_;
     bool hash_; //是否采用分布式
 
 };
