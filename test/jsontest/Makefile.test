@@ -1,8 +1,0 @@
-test: $(wildcard *.cc) ../../net/socket.cc
-	g++ -g $^ -o $@ \
-		-I../../../opensource/jsoncpp/include/ \
-		-ljsoncpp \
-		-L../../../opensource/jsoncpp/build/debug/src/lib_json \
-		-Wl,-rpath=../../../opensource/jsoncpp/build/debug/src/lib_json
-clean:
-	rm test -f
