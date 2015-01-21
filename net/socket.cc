@@ -90,7 +90,7 @@ int Socket::Connect(const char *ip, int port)
     addr.sin_port = htons(port);
     result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
     if ( result != 0 ) {
-        Close();
+        //Close();
         return -1;
     }
     
@@ -110,7 +110,7 @@ int Socket::Connect()
     addr.sin_port = htons(port_);
     result = connect(fd_, (struct sockaddr *) & addr, sizeof(struct sockaddr)); 
     if ( result != 0 ) {
-        Close();
+        //Close();
         return -1;
     }
     

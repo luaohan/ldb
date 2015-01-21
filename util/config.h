@@ -23,8 +23,8 @@ struct Config {
     //否则，返回 -1
     int LoadConfig(const char *filename);
 
-
     bool daemon_;
+    bool master_server_;
 
     int server_port_;
 
@@ -33,6 +33,14 @@ struct Config {
     std::string db_directory_;
 
     int level_;
+
+    std::string slave_ip_;
+    std::string slave1_ip_;
+    std::string slave2_ip_;
+
+    int slave_port_;
+    int slave1_port_;
+    int slave2_port_;
 
     private:
         int LoadConfigFromStr(char *str);

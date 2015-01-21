@@ -11,6 +11,7 @@
 #include <leveldb/slice.h>
 
 #include <net/event.h>
+#include <net/socket.h>
 #include <util/config.h>
 
 class Client;
@@ -25,17 +26,20 @@ public:
     int Get(const leveldb::Slice& key, std::string* value);
     int Delete(const leveldb::Slice& key);
 
-    int Run(const char *config_file, const char *ip, int port);
+    int Run(const char *config_file);
 
 private:
     int ProcessEvent();
     void ProcessReadEvent();
     void ProcessWriteEvent();
+    void ProcessTimeEvent();
     void DeleteClient(Client *c);
 
     void AddClient(Client *cli);
     void DeleteClient(int fd);
     Client *FindClient(int fd);
+
+    void ConnectSlave();
 
 
 private:
@@ -45,15 +49,24 @@ private:
     leveldb::DB *db_;
     
     std::vector<Client *> clients_;
+    
+    int time_out_;
 
 public:
     Epoll event_;
     Event fired_read_[1024];
     Event fired_write_[1024];
+    
+    std::vector<TimeEvent> time_event_;
 
     Acceptor *socket_;
+    
+    Socket *slave1_;
+    Socket *slave2_;
 
     Config config_;
+
+    bool server_can_write_;
 
 };
 

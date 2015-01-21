@@ -42,6 +42,8 @@ Client::Impl::~Impl()
 bool Client::Impl::Connect(const std::string &ip, int port)
 {
     int rc = socket_->Connect(ip.c_str(), port);
+    printf("rc : %d\n", rc);
+
     if (rc == -1) {
         return false;
     }
@@ -85,6 +87,11 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
             return Status::ServerExit();
         }
 
+        short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
+        if (packet_type == REPLAY_ERROR) {
+            return Status::Unknown();
+        }
+
         return Status::Ok();
     }
 
@@ -107,6 +114,11 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
     }
     if (ret > 0 && ret < HEAD_LEN) {
         return Status::ServerExit();
+    }
+    
+    short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
+    if (packet_type == REPLAY_ERROR) {
+        return Status::Unknown();
     }
 
     return Status::Ok();
@@ -135,12 +147,12 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
         return Status::ServerExit(); //server exit
     }
 
-    int packet_len = ntohl(*((int *)&(buf[0])));
     short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
     if (packet_type == REPLAY_NO_THE_KEY) {
         return Status::KeyNotExist();
     }
 
+    int packet_len = ntohl(*((int *)&(buf[0])));
     int body_len = packet_len - HEAD_LEN;
 
     if (body_len <= ONE_M) {
@@ -210,6 +222,11 @@ Status Client::Impl::Del(const std::string &key)
     }
     if (ret > 0 && ret < HEAD_LEN) {
         return Status::ServerExit(); //server exit
+    }
+    
+    short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
+    if (packet_type == REPLAY_ERROR) {
+        return Status::Unknown();
     }
 
     return 0;

@@ -1,6 +1,7 @@
 // acceptor.cc (2014-12-24)
 // WangPeng (1245268612@qq.com)
 
+#include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -97,7 +98,7 @@ int Acceptor::Listen(const char *ip, int port, int backlog)
    
     strcpy(ip_, ip);
     port_ = port;
-   
+  
     return 0;
 }
 

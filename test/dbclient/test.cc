@@ -9,19 +9,23 @@
 #include <assert.h>
 #include <string>
 
-#include <dbclient/ldbc.h>
+#include <dbclient/client.h>
 
 #define val_len 1024 * 1024 * 2 // 2 M
 
 int main()
 {
-#if 0   
     Client cli(false); //非分布式
 
-    if (cli.Connect("127.0.0.1", 8899) == -1) {
+    if (cli.Connect("192.168.0.1", 8881) == -1) {
         fprintf(stderr, "connect errno: %s\n", strerror(errno));
         return -1;
     }
+    return 0;
+
+
+
+
     char key[1024];
     memset(key, '1', 1023);
     key[1023] = '\0';
@@ -64,8 +68,8 @@ int main()
     }
     int t = time(NULL) - t1;
     printf("100000 datas, time is : %d seconds, %d/s\n", t, 100000/t);
-#endif
 
+#if 0   
     Client cli(true); //分布式
     std::string file_name = "config.json";
     int ret = cli.Init(file_name);
@@ -105,6 +109,7 @@ int main()
         s = cli.Get(true_key, &getval); 
         assert(s.IsKeyNotExist());
     }
+#endif
 
     return 0;
 }

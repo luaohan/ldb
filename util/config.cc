@@ -65,14 +65,18 @@ int strs2tokens(char *strs, const char *delim, char *tokens[], int *num)
 
 
 Config::Config():
-    daemon_(false), server_port_(8899), level_(4)
+    daemon_(false), master_server_(false), server_port_(8899), level_(4),
+    slave1_port_(8881), slave2_port_(8882)
 {
     db_directory_ = "./db_directory";
     log_file_ = "./log/loginfo";
+    //slave1_ip_ = "192.168.220.1";
+    //slave2_ip_ = "192.168.220.2";
 }
 
 Config::~Config()
 {
+
 }
 
 int Config::LoadConfig(const char *filename)
@@ -138,13 +142,33 @@ int Config::LoadConfigFromStr(char *str)
                 return -1;
             }
 
-
             if (strcmp(real_tokens[1], "yes") == 0) {
            
                 daemon_ = true;
             } else if (strcmp(real_tokens[1], "no") == 0) {
                
                 daemon_ = false;
+            } else {
+               
+                fprintf(stderr, " config file para error \n");
+                return -1;
+            }
+        } 
+        
+        else if (strcmp(real_tokens[0], "master_server") == 0) {
+
+            if (real_line_num != 2) {
+                fprintf(stderr, " config file para error\n");
+                return -1;
+            }
+
+
+            if (strcmp(real_tokens[1], "yes") == 0) {
+           
+                master_server_ = true;
+            } else if (strcmp(real_tokens[1], "no") == 0) {
+               
+                master_server_ = false;
             } else {
                
                 fprintf(stderr, " config file para error \n");
@@ -161,6 +185,39 @@ int Config::LoadConfigFromStr(char *str)
             int port = atoi( real_tokens[1] );
            
             server_port_ = port;
+        } 
+        
+        else if (strcmp(real_tokens[0], "slave_port") == 0) {
+            if (real_line_num != 2) {
+                fprintf(stderr, " config file para error\n");
+                return -1;
+            }
+       
+            int port = atoi( real_tokens[1] );
+           
+            slave_port_ = port;
+        } 
+        
+        else if (strcmp(real_tokens[0], "slave1_port") == 0) {
+            if (real_line_num != 2) {
+                fprintf(stderr, " config file para error\n");
+                return -1;
+            }
+       
+            int port = atoi( real_tokens[1] );
+           
+            slave1_port_ = port;
+        } 
+        
+        else if (strcmp(real_tokens[0], "slave2_port") == 0) {
+            if (real_line_num != 2) {
+                fprintf(stderr, " config file para error\n");
+                return -1;
+            }
+       
+            int port = atoi( real_tokens[1] );
+           
+            slave2_port_ = port;
         } 
         
         else if (strcmp(real_tokens[0], "level") == 0) {
@@ -190,6 +247,33 @@ int Config::LoadConfigFromStr(char *str)
             }
         
             db_directory_ = real_tokens[1];
+        } 
+        
+        else if (strcmp(real_tokens[0], "slave_ip") == 0) {
+            if (real_line_num != 2) {
+                fprintf(stderr, " config file para error\n");
+                return -1;
+            }
+        
+            slave_ip_ = real_tokens[1];
+        } 
+        
+        else if (strcmp(real_tokens[0], "slave1_ip") == 0) {
+            if (real_line_num != 2) {
+                fprintf(stderr, " config file para error\n");
+                return -1;
+            }
+        
+            slave1_ip_ = real_tokens[1];
+        } 
+        
+        else if (strcmp(real_tokens[0], "slave2_ip") == 0) {
+            if (real_line_num != 2) {
+                fprintf(stderr, " config file para error\n");
+                return -1;
+            }
+        
+            slave2_ip_ = real_tokens[1];
         } 
         
         else {

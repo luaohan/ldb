@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <assert.h>
+#include <time.h>
 
 #include <net/acceptor.h>
 #include <util/daemon.h>
@@ -26,7 +27,8 @@ void SigProcess();
 static void SigtermHandler(int sig);
 
 Server::Server():
-    socket_(NULL)
+    socket_(NULL), slave1_(NULL), slave2_(NULL), 
+    server_can_write_(false), time_out_(2000) //2 S
 {
 
 }
@@ -36,7 +38,15 @@ Server::~Server()
     if (socket_ != NULL) {
         delete socket_;
     }
-
+    
+    if (slave1_ != NULL) {
+        delete slave1_;
+    }
+    
+    if (slave2_ != NULL) {
+        delete slave2_;
+    }
+    
     delete db_;
 }
 
@@ -98,7 +108,7 @@ Client *Server::FindClient(int fd)
     }
 }
 
-int Server::Run(const char *config_file, const char *ip, int port)
+int Server::Run(const char *config_file)
 {
     SigProcess();
 
@@ -125,20 +135,31 @@ int Server::Run(const char *config_file, const char *ip, int port)
     }
 
     int backlog = 512;
-    if (ip != NULL && port != 0) {
-        if (socket_->Listen(ip, port, backlog) < 0) {
-            return -1;
-        }
-    } else if (ip != NULL && port == 0) {
-        if (socket_->Listen(ip, config_.server_port_, backlog) < 0) {
-            return -1;
-        }
-    } else if (ip == NULL && port != 0) {
-        if (socket_->Listen("0.0.0.0", port, backlog) < 0) {
-            return -1;
-        }
-    } else if (ip == NULL && port == 0) {
+    if (config_.master_server_) {
         if (socket_->Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
+            fprintf(stderr, "%s\n", strerror(errno));
+            return -1;
+        }
+        
+        slave1_ = new Socket;
+        if (slave1_ == NULL) {
+            fprintf(stderr, "%s\n", strerror(errno));
+            return -1;
+        }
+
+        slave1_->set_noblock();
+
+        slave2_ = new Socket;
+        if (slave2_ == NULL) {
+            fprintf(stderr, "%s\n", strerror(errno));
+            return -1;
+        }
+
+        slave2_->set_noblock();
+
+    } else {
+        if (socket_->Listen(config_.slave_ip_.c_str(), config_.slave_port_, backlog) < 0) {
+            fprintf(stderr, "%s\n", strerror(errno));
             return -1;
         }
     }
@@ -149,6 +170,13 @@ int Server::Run(const char *config_file, const char *ip, int port)
     e.fd_ = socket_->fd();
     e.ptr_ = socket_;
     event_.AddReadEvent(e);
+
+    if (config_.master_server_) {
+        ConnectSlave();
+    } else {
+        server_can_write_ = true;
+        time_out_ = -1;
+    }
 
     if ( config_.daemon_ ) {
         Daemon();
@@ -164,7 +192,6 @@ int Server::Run(const char *config_file, const char *ip, int port)
         delete log;
     }
 
-    
     return 0;
 }
 
@@ -190,17 +217,23 @@ static void SigtermHandler(int sig)
 
 int Server::ProcessEvent()
 {
-    int n = event_.WaitReadEvent(fired_read_, fired_write_);
+    int n = event_.WaitReadEvent(fired_read_, fired_write_, time_out_);
     if ( n < 0) {
         log_error("WaitReadEvent error:[%s]", strerror(errno));
         return -1;
     }
     
+    printf("n:%d\n", n);
     //读事件
     ProcessReadEvent();
     
     //写事件
     ProcessWriteEvent();
+
+    //时间事件
+    if (server_can_write_ == false) {
+        ProcessTimeEvent();
+    }
 
     return 0;
 }                                        
@@ -263,6 +296,42 @@ void Server::ProcessWriteEvent()
     }
 }
 
+void Server::ProcessTimeEvent()
+{
+    std::vector<TimeEvent>::iterator i = time_event_.begin();
+
+    struct timeval tv;
+    unsigned long long now_time;        
+    int ret;
+
+    for (; i != time_event_.end(); i++) {
+        if (time_event_.size() == 0) {
+            break;
+        }
+        gettimeofday(&tv, NULL);
+        now_time = tv.tv_sec * 1000000 + tv.tv_usec;
+        if (now_time >= (*i).time_) {
+            ret = (*i).s_->Connect((*i).ip_.c_str(), (*i).port_);
+            if (config_.daemon_ == false) {
+                fprintf(stderr, "connect %s, %d\n", (*i).ip_.c_str(), (*i).port_);
+            }
+            
+            if (ret == -1) {
+                gettimeofday(&tv, NULL);
+                (*i).time_ = (tv.tv_sec + 2) * 1000000 + tv.tv_usec;
+                continue;
+            }
+            
+            time_event_.erase(i);   //移除
+        }
+    }
+
+    if(time_event_.empty()) {
+        server_can_write_ = true;
+        time_out_ = -1;
+    }
+}
+
 void Server::DeleteClient(Client *c)
 {
     Event e;
@@ -271,4 +340,31 @@ void Server::DeleteClient(Client *c)
     
     DeleteClient(c->fd());
     delete c;
+}
+
+void Server::ConnectSlave()
+{
+    int ret = 
+        slave1_->Connect(config_.slave1_ip_.c_str(), config_.slave1_port_);
+    if (ret == -1) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        //process after 2 second
+        TimeEvent te(slave1_, (tv.tv_sec + 2) * 1000000 + tv.tv_usec, config_.slave1_ip_, config_.slave1_port_);
+        time_event_.push_back(te);
+    }
+    
+    ret = slave2_->Connect(config_.slave2_ip_.c_str(), config_.slave2_port_);
+    if (ret == -1) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        //process after 2 second
+        TimeEvent te(slave2_, (tv.tv_sec + 2) * 1000000 + tv.tv_usec, config_.slave2_ip_, config_.slave2_port_);
+        time_event_.push_back(te);
+    }
+
+    if (time_event_.empty()) {
+        server_can_write_ = true;
+        time_out_ = -1;
+    }
 }

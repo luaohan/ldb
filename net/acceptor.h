@@ -23,7 +23,7 @@ class Acceptor {
        
         //error: return NULL
         Socket *Accept();
-       
+        
         void Close();
         int backlog() const;
         int fd() const;

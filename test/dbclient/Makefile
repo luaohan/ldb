@@ -1,5 +1,5 @@
 test: $(wildcard *.cc)
-	g++ -g $^ -o $@ -I../../ -L../../dbclient -lldbc -Wl,-rpath=../../dbclient
+	g++ -g $^ -o $@ -I../../ -L../../dbclient -lldbclient -Wl,-rpath=../../dbclient
 
 .PHONY: clean
 

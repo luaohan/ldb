@@ -225,42 +225,48 @@ int Client::WritePacket()
 
 int Client::SetCommand() 
 {
-    leveldb::Slice key(key_, key_len_);
-
     int ret;
-    int value_len = body_len_ - key_len_ - sizeof(short);
+    if (server_->server_can_write_) {
 
-    if (big_value_ == NULL) {
+        leveldb::Slice key(key_, key_len_);
 
-        leveldb::Slice val(val_, value_len);
-        ret = server_->Insert(key, val);
-        if (ret == -1) {
-            //fatal error
-            log_fatal("insert error");
-            return -1;
-        }   
+        int value_len = body_len_ - key_len_ - sizeof(short);
+
+        if (big_value_ == NULL) {
+
+            leveldb::Slice val(val_, value_len);
+            ret = server_->Insert(key, val);
+            if (ret == -1) {
+                //fatal error
+                log_fatal("insert error");
+                return -1;
+            }   
+        } else {
+            leveldb::Slice val(big_value_, value_len);
+            ret = server_->Insert(key, val);
+            if (ret == -1) {
+                //fatal error
+                log_fatal("insert error");
+                return -1;
+            }   
+            free(big_value_);
+            big_value_ = NULL;
+        }
+        
+        ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
     } else {
-        leveldb::Slice val(big_value_, value_len);
-        ret = server_->Insert(key, val);
-        if (ret == -1) {
-            //fatal error
-            log_fatal("insert error");
-            return -1;
-        }   
-        free(big_value_);
-        big_value_ = NULL;
+        ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_ERROR);
     }
 
-    ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
     replay_len_ = ret;
     ret = WritePacket();
-    
+
     if (ret == 2) { // 没写完
         //将写事件加入epoll
         Event e;
         e.fd_ = link_->fd();
         e.ptr_ = this;
-        
+
         server_->event_.AddWriteEvent(e);
     } else if (ret == -1) { //error
         return -1;
@@ -285,7 +291,7 @@ int Client::GetCommand()
 
             ret = FillPacket(replay_, MAX_PACKET_LEN, val.c_str(), val.size(), 
                     NULL, 0, REPLAY_OK);
-    
+
         } else {
             int size = val.size() + sizeof(int) + sizeof(short) * 2;
             if (big_value_ == NULL) {
@@ -299,7 +305,7 @@ int Client::GetCommand()
                     NULL, 0, REPLAY_OK);
             memcpy(big_value_ + sizeof(int) + sizeof(short) * 2, 
                     val.c_str(), val.size());
-        
+
         }
     }
 
@@ -312,7 +318,7 @@ int Client::GetCommand()
         Event e;
         e.fd_ = link_->fd();
         e.ptr_ = this;
-        
+
         server_->event_.AddWriteEvent(e);
     } else if (ret == -1) { //error
         return -1;
@@ -323,10 +329,16 @@ int Client::GetCommand()
 
 int Client::DelCommand()
 {
-    leveldb::Slice key(key_, key_len_);
-    server_->Delete(key);
+    int ret;
+    if (server_->server_can_write_) {
+        leveldb::Slice key(key_, key_len_);
+        server_->Delete(key);
 
-    int ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
+        ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
+    } else {
+        ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_ERROR);
+    }
+    
     replay_len_ = ret;
     ret = WritePacket();
 

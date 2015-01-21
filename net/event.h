@@ -4,7 +4,21 @@
 #ifndef _E_EPOLL_H_
 #define _E_EPOLL_H_
 
+#include <string>
+#include <sys/time.h>
+#include <unistd.h>
 #include <sys/epoll.h>
+#include <net/socket.h>
+
+struct TimeEvent {
+    TimeEvent(Socket *s, unsigned long long time, std::string ip, int port):
+        s_(s), time_(time), ip_(ip), port_(port){}
+    
+    Socket *s_;
+    unsigned long long time_; //微妙，如果当前的时间大于这个时间，就执行时间事件
+    std::string ip_;
+    int port_;
+};
 
 struct Event {
     Event():fd_(-1), ptr_(NULL){}

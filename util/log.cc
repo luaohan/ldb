@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -23,20 +24,34 @@ Log::Log(std::string logfile_path, int level, int rotate_size):
     if (rotate_size_ < 1024 * 1024 * 10) {
         rotate_size_ = 1024 * 1024 * 10; //10M
     }
+    
+    Mkdir(logfile_path_.c_str());
 
     fd_ = open(logfile_path_.c_str(), O_RDWR | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
-
-    assert(fd_ != -1);
+    if (fd_ == -1) {
+        fprintf(stderr, "make logfile error: %s\n", strerror(errno));
+        exit(0);
+    }
 }
 
-#if 0
-Log::HasDir(const char *str) 
+void Log::Mkdir(const char *str) 
 {
-    int pfrond = 0;
-    int pbehind = strlen(str) - 1;
-    if (strpfrond)
+    const char *s = str;
+    const char *p = rindex(s, '/');
+    
+    char dir[256];
+    int dir_len = p - s;
+    memcpy(dir, s, dir_len);
+    dir[dir_len] = '\0';
+
+    int ret = mkdir(dir, S_IRWXU);
+    if (ret == -1) {
+        if (errno != EEXIST) {
+            fprintf(stderr, "make logdir error: %s\n", strerror(errno));
+            exit(0);
+        }
+    }
 }
-#endif
 
 Log::~Log()
 {

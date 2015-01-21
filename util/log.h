@@ -28,11 +28,7 @@ class Log {
         int Rotate();
         const char *LevelString(int level);
 
-#if 0
-        //有目录返回0
-        //否则返回 -1
-        int HasDir(const char *str);
-#endif
+        void Mkdir(const char *str);
 
     private:
         int fd_;

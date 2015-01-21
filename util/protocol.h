@@ -10,6 +10,7 @@
 #define DEL_CMD 2
 
 #define REPLAY_OK 3
+#define REPLAY_ERROR 5 
 
 #define REPLAY_NO_THE_KEY 4
 

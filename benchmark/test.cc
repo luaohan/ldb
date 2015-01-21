@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <iostream>
 #include <sstream>
-#include <dbclient/ldbc.h>
+#include <dbclient/client.h>
 #include "test.h"
 #include "../dbclient/status.h"
 
