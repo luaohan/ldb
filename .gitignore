@@ -3,9 +3,6 @@
 *.o
 *.d
 
-dbserver/ldb_master.conf
-dbserver/ldb_slave_1.conf
-dbserver/ldb_slave_2.conf
 master_db_directory/
 master_log/
 slave_1_db_directory/
