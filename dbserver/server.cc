@@ -20,6 +20,7 @@
 
 #include <dbserver/server.h>
 #include <dbserver/client.h>
+#include <dbserver/slave.h>
 
 bool quit = false;
 
@@ -28,7 +29,7 @@ static void SigtermHandler(int sig);
 
 Server::Server():
     socket_(NULL), slave1_(NULL), slave2_(NULL), 
-    server_can_write_(false), time_out_(2000) //2 S
+    slave_1_(NULL), server_can_write_(false), time_out_(2000) //2 S
 {
 
 }
@@ -148,6 +149,11 @@ int Server::Run(const char *config_file)
         }
 
         slave1_->set_noblock();
+        slave_1_ = new Slave(slave1_, this);  //这里只先弄一个 slave
+        if (slave_1_ == NULL) {
+            fprintf(stderr, "%s\n", strerror(errno));
+            return -1;
+        }
 
         slave2_ = new Socket;
         if (slave2_ == NULL) {
@@ -165,6 +171,7 @@ int Server::Run(const char *config_file)
     }
 
     socket_->set_noblock();
+    socket_->set_reuseAddr();
 
     Event e;
     e.fd_ = socket_->fd();
@@ -223,7 +230,6 @@ int Server::ProcessEvent()
         return -1;
     }
     
-    printf("n:%d\n", n);
     //读事件
     ProcessReadEvent();
     
@@ -261,12 +267,23 @@ void Server::ProcessReadEvent()
         
             log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
                     link->ip(), link->port(), link->fd());
-           
+
             continue;     
         }
 
+        if ((Slave *)fired_read_[i].ptr_ == slave_1_) {
+            int rc = slave_1_->Read();
+            
+            if (rc == 2) {
+                continue;
+            }
+
+            //到这里表示读完了slave 发来的信息
+            continue;
+        }
+
         Client *cli = (Client *)fired_read_[i].ptr_;
-        int rc = cli->Read();
+        int rc = cli->Read(slave_1_);
         if (rc == -1) {
             DeleteClient(cli);//close the client
         }
@@ -277,10 +294,22 @@ void Server::ProcessWriteEvent()
 {
     for (int i = 0; fired_write_[i].ptr_ != NULL; i++) 
     {
-        Client *cli = (Client *)fired_write_[i].ptr_;
-       
-        int rc = cli->Write();
+        if ((Slave *)fired_write_[i].ptr_ == slave_1_) {
+            int rc = slave_1_->Write();
+            if (rc == 2) {
+                continue;
+            }
 
+            //到这里表示写完了要发给slave 的信息
+            Event e;
+            e.fd_ = slave_1_->link_->fd();
+            e.ptr_ = slave_1_;
+            event_.DelWriteEvent(e);
+            continue;
+        }
+
+        Client *cli = (Client *)fired_write_[i].ptr_;
+        int rc = cli->Write();
         if (rc == -1) {
             DeleteClient(cli);//close the client
         } else if (rc == 2) {
@@ -329,6 +358,10 @@ void Server::ProcessTimeEvent()
     if(time_event_.empty()) {
         server_can_write_ = true;
         time_out_ = -1;
+        Event e;
+        e.fd_ = slave1_->fd();
+        e.ptr_ = slave_1_;
+        event_.AddReadEvent(e);
     }
 }
 
@@ -366,5 +399,9 @@ void Server::ConnectSlave()
     if (time_event_.empty()) {
         server_can_write_ = true;
         time_out_ = -1;
+        Event e;
+        e.fd_ = slave1_->fd();
+        e.ptr_ = slave_1_;
+        event_.AddReadEvent(e);
     }
 }

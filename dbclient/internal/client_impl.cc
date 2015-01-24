@@ -42,8 +42,6 @@ Client::Impl::~Impl()
 bool Client::Impl::Connect(const std::string &ip, int port)
 {
     int rc = socket_->Connect(ip.c_str(), port);
-    printf("rc : %d\n", rc);
-
     if (rc == -1) {
         return false;
     }

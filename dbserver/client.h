@@ -10,6 +10,7 @@
 #include <net/socket.h>
 
 class Server;
+class Slave;
 
 class Client {
 public:
@@ -24,7 +25,9 @@ public:
         replay_len_(0), 
         big_recv_(NULL), 
         big_value_(NULL), 
-        cmd_(-1) {}
+        cmd_(-1),
+        first_to_slave_(false),
+        client_flag_(-1){}
 
     ~Client() { 
         if (link_ != NULL) {
@@ -32,9 +35,18 @@ public:
         }
     }
 
-    int Read();
+    int Read(Slave *slave);
     int Write();
     int fd() const { return link_->fd(); }
+    
+    int ProcessCmd();
+   
+public:
+    Socket *link_;
+    int body_len_;      //包体的长度
+    char head_to_slave_[HEAD_LEN];
+    char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
+    char *big_recv_;
 
 private:
     //ok: return 0
@@ -48,8 +60,7 @@ private:
     //client exit: return 1, 调用者要把client 关掉
     //return 2,包头/包体 不完整，放回继续读
     int ReadHead();
-    int ReadBody();
-    int ProcessCmd();
+    int ReadBody(Slave *slave);
 
     //error: return -1
     //ok: return 0
@@ -58,7 +69,6 @@ private:
 
 private:
     Server *server_;
-    Socket *link_;
 
     char key_[MAX_KEY_LEN];
     char val_[MAX_VAL_LEN];
@@ -73,18 +83,18 @@ private:
 
     bool data_one_;     //数据包头是否读够
 
-    int body_len_;      //包体的长度
     int key_len_;       //key 的长度
-
-    char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
 
     int replay_len_;
     char replay_[MAX_PACKET_LEN];  //回复缓冲区
 
-    char *big_recv_;
     char *big_value_;
 
     int cmd_;
+    
+    short client_flag_; 
+    
+    bool first_to_slave_;
 
 };
 

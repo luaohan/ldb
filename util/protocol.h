@@ -19,6 +19,7 @@
 #define ONE_M       1048576    
 
 #define HEAD_LEN (sizeof(int) + sizeof(short))
+#define PACKET_LEN_SLAVE_REPLAY (HEAD_LEN + (sizeof(short)))
 
 #define MAX_PACKET_LEN sizeof(int) + sizeof(short) + \
     sizeof(int/*short*/) + MAX_KEY_LEN + MAX_VAL_LEN 

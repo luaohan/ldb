@@ -24,13 +24,13 @@ Test::Test(Client *client)
     }
 }
 
-bool Test::Basic(std::string &key, std::string &value)
+bool Test::Basic(std::string &key, std::string &value, bool only_set)
 {
     //cout << "Enter Basic test" << endl;
 
     mod_ = kText;
 
-    bool ret = Exec(key, value);
+    bool ret = Exec(key, value, only_set);
 
     //cout << "Leave Basic test" << endl;
 
@@ -100,7 +100,6 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
     if (only_set) {
         return true;
     }
-    
     std::string response;
     status = client_->Get(key, &response);
     if (!status.IsOk()) {
@@ -113,20 +112,17 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
             << response << endl;
         return false;
     }
-
     status = client_->Del(key);
     if (!status.IsOk()) {
         cout << "del key: " << KEY(key) << " failed" << endl;
         return false;
     }
-    
     status = client_->Get(key, &response);
     if (!status.IsKeyNotExist()) {
         cout << "after del, get key: " 
             << KEY(key) << " should not success" << endl;
         return false;
     }
-    
     return true;
 }
 
@@ -150,7 +146,7 @@ bool Test::Run()
     std::string key("hello world");
     std::string value("hello world");
     ASSERT_TRUE(Basic(key, value));
-
+    
     key = NON_LEATER;
     value = NON_LEATER;
     ASSERT_TRUE(Basic(key, value));
@@ -160,8 +156,10 @@ bool Test::Run()
     ASSERT_TRUE(Binary(1, 1));
     //key len: 1K, value len: 10K
     ASSERT_TRUE(Binary(1*1024/256, 10*1024/256));
-    //key len: 60K, value len: 2M
-    ASSERT_TRUE(Binary(60*1024/256, 2*1024*1024/256)); 
+
+
+    //key len: 60K, value len: 1M
+    ASSERT_TRUE(Binary(60*1024/256, 1*1024*1024/256)); 
     //key len: 60K, value len: 5M
     ASSERT_TRUE(Binary(60*1024/256, 5*1024*1024/256)); 
     //key len: 60K, value len: 10M
@@ -171,7 +169,7 @@ bool Test::Run()
     //batch test
     //ASSERT_TRUE(Batch(10000, 1*1024/256, 10*1024/256));
     //ASSERT_TRUE(Batch(1000000, 1*1024/256, 10*1024/256));
- 
+#if 0
     cout << "功能测试完毕，以下是性能测试" << endl;
 
     char key_1[1024];
@@ -193,8 +191,7 @@ bool Test::Run()
     int t = time(NULL) - t1; 
     std::cout << max_i << " 条数据, key_len:1K, val_len:1K, ";
     std::cout << "alltime: " << t << " S, "<< max_i / t << " 条数据/S" << std::endl;
-
-
+#endif
     cout << "Run Ok" << endl;
 
     return true;

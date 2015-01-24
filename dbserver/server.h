@@ -16,6 +16,7 @@
 
 class Client;
 class Acceptor;
+class Slave;
 
 class Server {
 public:
@@ -27,6 +28,8 @@ public:
     int Delete(const leveldb::Slice& key);
 
     int Run(const char *config_file);
+    
+    Client *FindClient(int fd);
 
 private:
     int ProcessEvent();
@@ -37,7 +40,6 @@ private:
 
     void AddClient(Client *cli);
     void DeleteClient(int fd);
-    Client *FindClient(int fd);
 
     void ConnectSlave();
 
@@ -63,6 +65,8 @@ public:
     
     Socket *slave1_;
     Socket *slave2_;
+    
+    Slave *slave_1_;
 
     Config config_;
 
