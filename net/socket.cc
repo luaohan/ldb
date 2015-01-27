@@ -1,6 +1,8 @@
 // socket.cc (2014-12-24)
 // WangPeng (1245268612@qq.com)
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -212,7 +214,7 @@ int Socket::BlockRead(char *buffer, int size)
        nleft -= nread;
        buffer += nread;
    }
-
+   
    return size - nleft;
 }
 

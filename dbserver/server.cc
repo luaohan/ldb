@@ -21,11 +21,9 @@
 #include <dbserver/server.h>
 #include <dbserver/client.h>
 #include <dbserver/slave.h>
+#include <dbserver/signal.h>
 
 bool quit = false;
-
-void SigProcess();
-static void SigtermHandler(int sig);
 
 Server::Server():
     socket_(NULL), slave1_(NULL), slave2_(NULL), 
@@ -111,8 +109,6 @@ Client *Server::FindClient(int fd)
 
 int Server::Run(const char *config_file)
 {
-    SigProcess();
-
     int ret = config_.LoadConfig(config_file);
     if (ret != 0) {
         fprintf(stderr, "configfile is wrong.\n");
@@ -130,13 +126,28 @@ int Server::Run(const char *config_file)
         = leveldb::DB::Open(options_, config_.db_directory_.c_str(), &db_);
     assert(status.ok());
 
+    ret = CreateServer();
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (log != NULL) {
+        delete log;
+    }
+
+    return 0;
+}
+
+int Server::CreateServer()
+{
     socket_ = new Acceptor;
     if (socket_ == NULL) {
         return -1;
     }
-
+    
     int backlog = 512;
     if (config_.master_server_) {
+        socket_->set_reuseAddr();
         if (socket_->Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
             fprintf(stderr, "%s\n", strerror(errno));
             return -1;
@@ -164,6 +175,7 @@ int Server::Run(const char *config_file)
         slave2_->set_noblock();
 
     } else {
+        socket_->set_reuseAddr();
         if (socket_->Listen(config_.slave_ip_.c_str(), config_.slave_port_, backlog) < 0) {
             fprintf(stderr, "%s\n", strerror(errno));
             return -1;
@@ -171,7 +183,6 @@ int Server::Run(const char *config_file)
     }
 
     socket_->set_noblock();
-    socket_->set_reuseAddr();
 
     Event e;
     e.fd_ = socket_->fd();
@@ -195,32 +206,7 @@ int Server::Run(const char *config_file)
         ProcessEvent();
     }
 
-    if (log != NULL) {
-        delete log;
-    }
-
-    return 0;
 }
-
-void SigProcess()
-{
-    signal(SIGHUP, SIG_IGN);
-    signal(SIGPIPE, SIG_IGN);
-
-    struct sigaction act;
-
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
-    act.sa_handler = SigtermHandler;
-    sigaction(SIGTERM, &act, NULL);
-}
-
-static void SigtermHandler(int sig)
-{
-    quit = true;
-    log_info("server exit");
-}
-
 
 int Server::ProcessEvent()
 {

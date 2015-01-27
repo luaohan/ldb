@@ -9,7 +9,7 @@
 #include <sstream>
 #include <dbclient/client.h>
 #include "test.h"
-#include "../dbclient/status.h"
+#include <dbclient/status.h>
 
 using namespace std;
 

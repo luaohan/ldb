@@ -8,7 +8,7 @@
 
 class Client {
 public:
-    Client(bool hash);
+    Client(bool hash, const std::string &slave_conf);
     ~Client();
 
     bool Connect(const std::string &ip, int port);

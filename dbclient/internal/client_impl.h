@@ -8,7 +8,7 @@
 
 class Client::Impl {
 public:
-    Impl(bool hash);
+    Impl(bool hash, const std::string &slave_conf);
     ~Impl();
 
     //return -1, 错误
@@ -28,12 +28,26 @@ private:
     bool Connect();
     Socket *GetSocket(const std::string &key);
 
+    void InitSlaveInfo(const std::string &slave_conf);
+    bool ConnectSlave1();
+    bool ConnectSlave2();
+    Status Get(const std::string &key, std::string *value, Socket *socket); 
+
 private:
     Socket *socket_;
     std::vector<Socket *> real_server_;
     std::vector<Socket *> virtual_server_;
     bool hash_; //是否采用分布式
 
+    bool master_server_exit_;
+    Socket *socket_slave_1_;
+    Socket *socket_slave_2_;
+    
+    std::string slave_1_ip_;
+    std::string slave_2_ip_;
+
+    int slave_1_port_;
+    int slave_2_port_;
 };
 
 

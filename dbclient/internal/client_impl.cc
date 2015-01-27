@@ -16,13 +16,16 @@
 #include <util/protocol.h>
 #include <internal/client_impl.h>
 
-Client::Impl::Impl(bool hash):
-    socket_(NULL), hash_(hash) 
+Client::Impl::Impl(bool hash, const std::string &slave_conf):
+    socket_(NULL), hash_(hash), master_server_exit_(false),
+    socket_slave_1_(NULL), socket_slave_2_(NULL)
 {
     if (!hash_) {
         socket_ = new Socket();
         assert(socket_ != NULL);
     }
+    
+    InitSlaveInfo(slave_conf);
 }
 
 Client::Impl::~Impl()
@@ -36,6 +39,14 @@ Client::Impl::~Impl()
         for (i = real_server_.begin(); i != real_server_.end(); i++) {
             delete (*i);
         }
+    }
+
+    if (socket_slave_1_ != NULL) {
+        delete socket_slave_1_;
+    }
+
+    if (socket_slave_2_ != NULL) {
+        delete socket_slave_2_;
     }
 }
 
@@ -58,6 +69,10 @@ void Client::Impl::Close()
 
 Status Client::Impl::Set(const std::string &key, const std::string &val)
 {
+    if (master_server_exit_) {
+        return Status::ServerExit();
+    }
+    
     if (hash_) {
         socket_ = GetSocket(key);
     }
@@ -74,6 +89,11 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
 
         int ret = socket_->BlockWrite(buf, len);
         if (ret < 0) {
+            if (errno == 104) {
+                master_server_exit_ = true;
+                return Status::ServerExit();
+            }
+            
             return Status::Unknown();
         }
 
@@ -81,7 +101,8 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
         if (ret < 0) {
             return Status::Unknown();
         }
-        if (ret > 0 && ret < HEAD_LEN) {
+        if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+            master_server_exit_ = true;
             return Status::ServerExit();
         }
 
@@ -98,11 +119,21 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
 
     int ret = socket_->BlockWrite(buf, len - val.size());
     if (ret < 0) {
+        if (errno == 104) {
+            master_server_exit_ = true;
+            return Status::ServerExit();
+        }
+    
         return Status::Unknown();
     }
 
     ret = socket_->BlockWrite((char *)s_val, val.size());
     if (ret < 0) {
+        if (errno == 104) {
+            master_server_exit_ = true;
+            return Status::ServerExit();
+        }
+    
         return Status::Unknown();
     }
 
@@ -110,7 +141,8 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
     if (ret < 0) {
         return Status::Unknown();
     }
-    if (ret > 0 && ret < HEAD_LEN) {
+    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+        master_server_exit_ = true;
         return Status::ServerExit();
     }
     
@@ -122,26 +154,126 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
     return Status::Ok();
 }
 
+Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socket)
+{
+    assert(socket != NULL);
+
+    const char *s_key = key.c_str();
+    char buf[MAX_PACKET_LEN]; 
+
+    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
+    if (master_server_exit_) {
+        len += sizeof(short);
+    }
+    int ret = socket->BlockWrite(buf, len);
+    if (ret < 0) {
+        if (errno == 104) {
+            master_server_exit_ = true;
+            return Status::ServerExit();
+        }
+    
+        return Status::Unknown();
+    }
+    ret = socket->BlockRead(buf, HEAD_LEN); //读包头
+    if (ret < 0) {
+        return Status::Unknown();
+    }
+    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+        master_server_exit_ = true;
+        return Status::ServerExit(); //server exit
+    }
+
+    short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
+    if (packet_type == REPLAY_NO_THE_KEY) {
+        return Status::KeyNotExist();
+    }
+
+    int packet_len = ntohl(*((int *)&(buf[0])));
+    int body_len = packet_len - HEAD_LEN;
+
+    if (body_len <= ONE_M) {
+        
+        ret = socket->BlockRead(buf, body_len); //读包体
+        if (ret < 0) {
+            return Status::Unknown();
+        }
+        if ((ret > 0 && ret < HEAD_LEN )|| ret == 0) {
+            master_server_exit_ = true;
+            return Status::ServerExit();
+        }
+
+        //short value_len = ntohs(*((short *)&(buf[0])));
+        int value_len = body_len - sizeof(short);
+
+        std::string value(&buf[sizeof(short)], value_len);
+        *val = value;
+
+        return Status::Ok();
+    }
+
+    char *p = (char *)malloc(body_len);
+    if (p == NULL) {
+        return Status::Unknown();
+    }
+
+    ret = socket->BlockRead(p, body_len); //读包体
+    if (ret < 0) {
+        free(p);
+        return Status::Unknown();
+    }
+    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+        master_server_exit_ = true;
+        free(p);
+        return Status::ServerExit(); //server exit
+    }
+
+    //short value_len = ntohs(*((short *)&(buf[0])));
+    int value_len = body_len - sizeof(short);
+
+    std::string value(&p[sizeof(short)], value_len);
+    *val = value;
+
+    free(p);
+
+    return Status::Ok();
+}
+
 Status Client::Impl::Get(const std::string &key, std::string *val)
 {
+    if (master_server_exit_) {
+        if (socket_slave_1_ == NULL) {
+            ConnectSlave1(); //这里先保证slave1 一定存在
+        }
+        
+        return Get(key, val, socket_slave_1_);
+    }
+    
     if (hash_) {
         socket_ = GetSocket(key);
     }
+    
+    return Get(key, val, socket_);
 
+#if 0
     const char *s_key = key.c_str();
     char buf[MAX_PACKET_LEN]; 
 
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
     int ret = socket_->BlockWrite(buf, len);
     if (ret < 0) {
+        if (errno == 104) {
+            master_server_exit_ = true;
+            return Status::ServerExit();
+        }
+    
         return Status::Unknown();
     }
-
     ret = socket_->BlockRead(buf, HEAD_LEN); //读包头
     if (ret < 0) {
         return Status::Unknown();
     }
-    if (ret > 0 && ret < HEAD_LEN) {
+    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+        master_server_exit_ = true;
         return Status::ServerExit(); //server exit
     }
 
@@ -159,7 +291,8 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
         if (ret < 0) {
             return Status::Unknown();
         }
-        if (ret > 0 && ret < HEAD_LEN) {
+        if ((ret > 0 && ret < HEAD_LEN )|| ret == 0) {
+            master_server_exit_ = true;
             return Status::ServerExit();
         }
 
@@ -182,7 +315,8 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
         free(p);
         return Status::Unknown();
     }
-    if (ret > 0 && ret < HEAD_LEN) {
+    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+        master_server_exit_ = true;
         free(p);
         return Status::ServerExit(); //server exit
     }
@@ -195,11 +329,17 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
 
     free(p);
 
-    return 0;
+    return Status::Ok();
+#endif
+
 }
 
 Status Client::Impl::Del(const std::string &key)
 {
+    if (master_server_exit_) {
+        return Status::ServerExit();
+    }
+    
     if (hash_) {
         socket_ = GetSocket(key);
     }
@@ -209,8 +349,13 @@ Status Client::Impl::Del(const std::string &key)
     char buf[MAX_PACKET_LEN]; 
 
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, DEL_CMD);
-    int ret = socket_->WriteData(buf, len);
+    int ret = socket_->BlockWrite(buf, len);
     if (ret < 0) {
+        if (errno == 104) {
+            master_server_exit_ = true;
+            return Status::ServerExit();
+        }
+    
         return Status::Unknown();
     }
 
@@ -218,7 +363,8 @@ Status Client::Impl::Del(const std::string &key)
     if (ret < 0) {
         return Status::Unknown();
     }
-    if (ret > 0 && ret < HEAD_LEN) {
+    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+        master_server_exit_ = true;
         return Status::ServerExit(); //server exit
     }
     
@@ -227,7 +373,7 @@ Status Client::Impl::Del(const std::string &key)
         return Status::Unknown();
     }
 
-    return 0;
+    return Status::Ok();
 }
 
 int Client::Impl::Init(const std::string &file_name)
@@ -381,3 +527,81 @@ unsigned int Client::Impl::DJBHash(const unsigned char *buf, int len)
 
     return hash;
 }                
+
+void Client::Impl::InitSlaveInfo(const std::string &slave_conf)
+{
+    int fd = open(slave_conf.c_str(), O_RDONLY);
+    if (fd < 0) {
+        fprintf(stderr, "open slave conf error: %s\n", strerror(errno));
+        exit(0);
+    }
+    
+    int BUFSIZE = 1024 * 1024 * 1; //1M
+    char *buf = (char *)malloc(BUFSIZE);
+    if (buf == NULL) {
+        close(fd);
+        fprintf(stderr, "malloc error: %s\n", strerror(errno));
+        exit(0);
+    }
+    
+    int read_size = read(fd, buf, BUFSIZE);
+    if (read_size < 0) {
+        free(buf);
+        close(fd);
+        fprintf(stderr, "read error: %s\n", strerror(errno));
+        exit(0);
+    }
+
+    buf[read_size] = '\0';
+
+    Json::Reader reader;
+    Json::Value json_object;
+    if (!reader.parse(buf, json_object)) {
+        free(buf);
+        close(fd);
+        fprintf(stderr, "json file error\n");
+        exit(0);
+    }
+
+    slave_1_ip_ = json_object["slave_1_ip"].asString();
+    slave_2_ip_ = json_object["slave_2_ip"].asString();
+    
+    slave_1_port_ = json_object["slave_1_port"].asInt();
+    slave_2_port_ = json_object["slave_2_port"].asInt();
+    
+    close(fd);
+    free(buf);
+
+    return ;
+}
+
+bool Client::Impl::ConnectSlave1()
+{
+    socket_slave_1_ = new Socket();
+    assert(socket_slave_1_ != NULL);
+
+    if (socket_slave_1_->Connect(slave_1_ip_.c_str(), slave_1_port_) == -1) {
+        printf("connect error: %s, %d\n", slave_1_ip_.c_str(), slave_1_port_);
+        socket_slave_1_->Close();
+        delete socket_slave_1_;
+        socket_slave_1_ = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+bool Client::Impl::ConnectSlave2()
+{
+    socket_slave_2_ = new Socket();
+    assert(socket_slave_2_ != NULL);
+
+    if (socket_slave_2_->Connect(slave_1_ip_.c_str(), slave_1_port_) == -1) {
+        socket_slave_2_->Close();
+        delete socket_slave_2_;
+        socket_slave_2_ = NULL;
+        return false;
+    }
+    
+    return true;
+}

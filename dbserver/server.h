@@ -43,6 +43,7 @@ private:
 
     void ConnectSlave();
 
+    int CreateServer();
 
 private:
     leveldb::Options options_;
@@ -53,6 +54,7 @@ private:
     std::vector<Client *> clients_;
     
     int time_out_;
+
 
 public:
     Epoll event_;

@@ -54,6 +54,7 @@ class Socket {
 
         //ok: 返回读到的字节数
         //error: return -1
+        //对方断开: return 0
         int BlockRead(char *buffer, int size);
 
         //ok: return size

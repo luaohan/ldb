@@ -16,6 +16,8 @@
 
 int Client::ReadHead()
 {
+    printf("readhead\n");
+
     int ret = link_->ReadData(recv_ + data_pos_, HEAD_LEN - data_pos_);
     if (ret < HEAD_LEN - data_pos_) {  
         if (ret == 0) {
@@ -73,6 +75,8 @@ int Client::ReadHead()
 
 int Client::ReadBody(Slave *slave)
 {
+    printf("readbody\n");
+
     if (body_len_ <= ONE_M) {
 
         int ret = link_->ReadData(recv_ + data_pos_, body_len_ - data_pos_);
@@ -311,6 +315,8 @@ int Client::SetCommand()
 
 int Client::GetCommand()
 {
+    printf("get command\n");
+
     leveldb::Slice key(key_, key_len_);
 
     std::string val;
@@ -322,6 +328,8 @@ int Client::GetCommand()
         //key exist
         //如果value 大于ONE_M, 需要申请内存
         if (val.size() <= ONE_M) {
+
+            printf("<=ONE_M\n");
 
             ret = FillPacket(replay_, MAX_PACKET_LEN, val.c_str(), val.size(), 
                     NULL, 0, REPLAY_OK);
@@ -409,12 +417,16 @@ int Client::Read(Slave *slave)
     }
 
     ret = ReadBody(slave); //读包体
+    printf("ret == %d\n", ret);
+
     if (ret == 1 || ret == -1) {
         return -1;
     } else if (ret == 2) { //包体不够
         return 0;
     }
-   
+  
+    printf("11111\n");
+
     if (first_to_slave_ == false) {
         ret = ProcessCmd();
         if (ret == -1) {

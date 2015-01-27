@@ -4,7 +4,8 @@
 #include <internal/client_impl.h>
 #include <assert.h>
 
-Client::Client(bool hash) : impl_(new Impl(hash))
+Client::Client(bool hash, const std::string &slave_conf) : 
+    impl_(new Impl(hash, slave_conf))
 {
     assert(impl_ != NULL);
 }
