@@ -61,7 +61,8 @@ int main(int argc, char *argv[])
     
     printf("set over \n");
   
-    sleep(5);
+    sleep(5);   //这时关掉 master 
+                //下面就是从 slave 中获取
 
     std::string get;
     cli.Get(a_key, &get);
