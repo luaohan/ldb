@@ -1,8 +1,45 @@
-bench: $(wildcard *.cc) ../net/socket.cc ../dbclient/client.cc ../util/protocol.cc ../dbclient/internal/client_impl.cc
-	g++  $^ -o $@ -I../ -I../dbclient -I/home/wangpeng/jsoncpp-src-0.5.0/include /usr/include/jsoncpp/libjson.a
+SRC=$(wildcard *.cc)
+OBJ=$(SRC:%.cc=%.o)
+TARGET:=bench
+
+
+CXXFLAGS := -g -O0 \
+	-I../../opensource/leveldb/include \
+	-I../../opensource/jsoncpp/include \
+	-I../
+
+LDFLAGS := -L../net \
+	-Wl,-rpath=../net \
+	-lldbnet \
+	-L../util \
+	-lldbutil \
+	-Wl,-rpath=../util \
+	-L../../opensource/leveldb \
+	-lleveldb \
+	-Wl,-rpath=../../opensource/leveldb \
+	-L../../opensource/jsoncpp \
+	-ljsoncpp \
+	-Wl,-rpath=../../opensource/jsoncpp \
+	-L../dbclient \
+	-lldbclient \
+	-Wl,-rpath=../dbclient
+
+
+$(TARGET): $(OBJ) 
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) $< -c -o $@
+
+%.d: %.cc
+	@$(CXX) -MM $(CXXFLAGS) $< > $@.$$$$; \
+		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+		rm -f $@.$$$$
+
+sinclude $(SRC:.cc=.d)
 
 .PHONY: clean
 
 clean:
-	rm bench
+	@rm $(TARGET) $(OBJ) *.d -f
 

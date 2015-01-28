@@ -15,7 +15,7 @@
 
 int main()
 {
-    Client cli(false); //非分布式
+    Client cli(false, "config.json"); //非分布式
 
     if (cli.Connect("192.168.0.1", 8881) == -1) {
         fprintf(stderr, "connect errno: %s\n", strerror(errno));
