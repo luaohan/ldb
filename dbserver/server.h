@@ -55,7 +55,6 @@ private:
     
     int time_out_;
 
-
 public:
     Epoll event_;
     Event fired_read_[1024];
