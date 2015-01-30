@@ -15,12 +15,14 @@ void client_cb(int fd, short what, void *arg);
 
 void listen_cb(int fd, short what, void *arg)
 {
+    fprintf(stderr, "listen_cb arg: %d \n", *((int *)arg));
+
     Socket *socket = server_socket.Accept();
     if (socket == NULL) {
         fprintf(stderr, "error: accept()\n");
         return ;
     }
-    socket->set_noblock();
+    socket->SetNonBlock();
 
     struct event* event = event_new(base, socket->fd(), EV_READ, 
             client_cb, socket);
@@ -65,20 +67,23 @@ int main()
         return -1;
     }
     
-    server_socket.set_reuseAddr();
+    server_socket.SetReuseAddr();
     int ret = server_socket.Listen("0.0.0.0", 8899, 10);
     if (ret == -1) {
         fprintf(stderr, "error: %s\n", strerror(errno));
         return -1;
     }
-    server_socket.set_noblock();
+    server_socket.SetNonBlock();
 
+    int num = 10;
     struct event* event = event_new(base, server_socket.fd(),
-                EV_READ | EV_PERSIST , listen_cb, NULL);
+                EV_READ | EV_PERSIST , listen_cb, &num);
     if (event == NULL) {
         fprintf(stderr, "error: event_new()\n");
         return -1;
     }
+
+    num = 500;
 
     ret = event_add(event, NULL);
     if (ret == -1) {

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <assert.h>
 
 #include <leveldb/slice.h>
 
@@ -13,11 +14,10 @@
 #include <dbserver/client.h>
 #include <dbserver/server.h>
 #include <dbserver/slave.h>
+#include <net/event.h>
 
 int Client::ReadHead()
 {
-    printf("readhead\n");
-
     int ret = link_->ReadData(recv_ + data_pos_, HEAD_LEN - data_pos_);
     if (ret < HEAD_LEN - data_pos_) {  
         if (ret == 0) {
@@ -73,10 +73,8 @@ int Client::ReadHead()
     return 0;
 }
 
-int Client::ReadBody(Slave *slave)
+int Client::ReadBody(/*Slave *slave*/)
 {
-    printf("readbody\n");
-
     if (body_len_ <= ONE_M) {
 
         int ret = link_->ReadData(recv_ + data_pos_, body_len_ - data_pos_);
@@ -124,13 +122,20 @@ int Client::ReadBody(Slave *slave)
         data_pos_ = 0;
     
         if (first_to_slave_ == true) {
-            slave->clients_.push_back(this);
-            ret = slave->Write();
+            slave_->clients_.push_back(this);
+            ret = slave_->Write();
             if (ret == 2) { //没写完, 将写事件加入epoll 
+#if 0
                 Event e;
                 e.fd_ = slave->link_->fd();
                 e.ptr_ = slave;
                 server_->event_.AddWriteEvent(e);
+#endif
+                struct event *e = event_new(server_->base_, slave_->link_->fd(),
+                        EV_WRITE | EV_PERSIST, Server::SlaveWriteCB, slave_);
+                assert(e != NULL);
+                event_add(e, NULL);
+                slave_->set_write_event(e);
             }
         }
 
@@ -197,13 +202,20 @@ int Client::ReadBody(Slave *slave)
     data_pos_ = 0;
 
     if (first_to_slave_ == true) {
-        slave->clients_.push_back(this);
-        ret = slave->Write();
+        slave_->clients_.push_back(this);
+        ret = slave_->Write();
         if (ret == 2) { //没写完, 将写事件加入epoll 
+#if 0
             Event e;
             e.fd_ = slave->link_->fd();
             e.ptr_ = slave;
             server_->event_.AddWriteEvent(e);
+#endif        
+            struct event *e = event_new(server_->base_, slave_->link_->fd(),
+                    EV_WRITE | EV_PERSIST, Server::SlaveWriteCB, slave_);
+            assert(e != NULL);
+            event_add(e, NULL);
+            slave_->set_write_event(e);
         }
     } else {
         free(big_recv_);
@@ -302,10 +314,18 @@ int Client::SetCommand()
 
     if (ret == 2) { // 没写完
         //将写事件加入epoll
+#if 0
         Event e;
         e.fd_ = link_->fd();
         e.ptr_ = this;
         server_->event_.AddWriteEvent(e);
+#endif
+        struct event *e = event_new(server_->base_, link_->fd(),
+                EV_WRITE | EV_PERSIST, Server::ClientWriteCB, this);
+        assert(e != NULL);
+        event_add(e, NULL);
+        write_event_ = e;
+
     } else if (ret == -1) { //error
         return -1;
     }
@@ -315,8 +335,6 @@ int Client::SetCommand()
 
 int Client::GetCommand()
 {
-    printf("get command\n");
-
     leveldb::Slice key(key_, key_len_);
 
     std::string val;
@@ -328,8 +346,6 @@ int Client::GetCommand()
         //key exist
         //如果value 大于ONE_M, 需要申请内存
         if (val.size() <= ONE_M) {
-
-            printf("<=ONE_M\n");
 
             ret = FillPacket(replay_, MAX_PACKET_LEN, val.c_str(), val.size(), 
                     NULL, 0, REPLAY_OK);
@@ -357,10 +373,18 @@ int Client::GetCommand()
     if (ret == 2) { // 没写完
 
         //将写事件加入epoll
+#if 0
         Event e;
         e.fd_ = link_->fd();
         e.ptr_ = this;
         server_->event_.AddWriteEvent(e);
+#endif
+        struct event *e = event_new(server_->base_, link_->fd(),
+                EV_WRITE | EV_PERSIST, Server::ClientWriteCB, this);
+        assert(e != NULL);
+        event_add(e, NULL);
+        write_event_ = e;
+
     } else if (ret == -1) { //error
         return -1;
     }
@@ -386,23 +410,30 @@ int Client::DelCommand()
     } else {
         ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_ERROR);
     }
-    
+
     replay_len_ = ret;
     ret = WritePacket();
     if (ret == 2) { // 没写完
         //将写事件加入epoll
+#if 0
         Event e;
         e.fd_ = link_->fd();
         e.ptr_ = this;
         server_->event_.AddWriteEvent(e);
+#endif
+        struct event *e = event_new(server_->base_, link_->fd(),
+                EV_WRITE | EV_PERSIST, Server::ClientWriteCB, this);
+        assert(e != NULL);
+        event_add(e, NULL);
+        write_event_ = e;
     } else if (ret == -1) { //error
         return -1;
     }
-    
+
     return 0;
 }
 
-int Client::Read(Slave *slave)
+int Client::Read(/*Slave *slave*/)
 {
     //读数据包
     int ret;
@@ -416,8 +447,7 @@ int Client::Read(Slave *slave)
         }
     }
 
-    ret = ReadBody(slave); //读包体
-    printf("ret == %d\n", ret);
+    ret = ReadBody(/*slave*/); //读包体
 
     if (ret == 1 || ret == -1) {
         return -1;
@@ -425,8 +455,6 @@ int Client::Read(Slave *slave)
         return 0;
     }
   
-    printf("11111\n");
-
     if (first_to_slave_ == false) {
         ret = ProcessCmd();
         if (ret == -1) {

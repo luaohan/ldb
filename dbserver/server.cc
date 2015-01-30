@@ -26,8 +26,8 @@
 bool quit = false;
 
 Server::Server():
-    socket_(NULL), slave1_(NULL), slave2_(NULL), 
-    slave_1_(NULL), server_can_write_(false), time_out_(2000) //2 S
+    socket_(NULL), slave1_(NULL), slave2_(NULL), event_(NULL), base_(NULL),
+    slave_1_(NULL), server_can_write_(false)//, time_out_(2000) //2 S
 {
 
 }
@@ -44,6 +44,14 @@ Server::~Server()
     
     if (slave2_ != NULL) {
         delete slave2_;
+    }
+
+    if (event_ != NULL) {
+        event_free(event_);
+    }
+
+    if (base_ != NULL) {
+        event_base_free(base_);
     }
     
     delete db_;
@@ -147,7 +155,7 @@ int Server::CreateServer()
     
     int backlog = 512;
     if (config_.master_server_) {
-        socket_->set_reuseAddr();
+        socket_->SetReuseAddr();
         if (socket_->Listen("0.0.0.0", config_.server_port_, backlog) < 0) {
             fprintf(stderr, "%s\n", strerror(errno));
             return -1;
@@ -159,8 +167,8 @@ int Server::CreateServer()
             return -1;
         }
 
-        slave1_->set_noblock();
-        slave_1_ = new Slave(slave1_, this);  //这里只先弄一个 slave
+        //slave1_->SetNonBlock();
+        slave_1_ = new Slave(slave1_, this, NULL, NULL);  //这里只先弄一个 slave
         if (slave_1_ == NULL) {
             fprintf(stderr, "%s\n", strerror(errno));
             return -1;
@@ -172,28 +180,38 @@ int Server::CreateServer()
             return -1;
         }
 
-        slave2_->set_noblock();
+        //slave2_->SetNonBlock();
 
     } else {
-        socket_->set_reuseAddr();
+        socket_->SetReuseAddr();
         if (socket_->Listen(config_.slave_ip_.c_str(), config_.slave_port_, backlog) < 0) {
             fprintf(stderr, "%s\n", strerror(errno));
             return -1;
         }
     }
 
-    socket_->set_noblock();
+    socket_->SetNonBlock();
 
+#if 0
     Event e;
     e.fd_ = socket_->fd();
     e.ptr_ = socket_;
     event_.AddReadEvent(e);
+#endif
+    
+    base_ = event_base_new();
+    assert(base_ != NULL);
+    event_ = event_new(base_, socket_->fd(),
+                EV_READ | EV_PERSIST, Server::ListenCB, this);
+    assert(event_ != NULL);
+    int ret = event_add(event_, NULL);
+    assert(ret != -1);
 
     if (config_.master_server_) {
         ConnectSlave();
     } else {
         server_can_write_ = true;
-        time_out_ = -1;
+        //time_out_ = -1;
     }
 
     if ( config_.daemon_ ) {
@@ -202,12 +220,18 @@ int Server::CreateServer()
 
     //fprintf(stderr, "init server success\n");
 
+    event_base_dispatch(base_);
+
+#if 0
     while (!quit) {
         ProcessEvent();
     }
+#endif
 
+    return 0;
 }
 
+#if 0
 int Server::ProcessEvent()
 {
     int n = event_.WaitReadEvent(fired_read_, fired_write_, time_out_);
@@ -241,16 +265,16 @@ void Server::ProcessReadEvent()
                 continue;
             }
 
-            link->set_noblock();
+            link->SetNonBlock();
 
             Client *cli = new Client(this, link);
             AddClient(cli);
-            
+#if 0 
             Event e;
             e.fd_ = link->fd();
             e.ptr_ = cli;
             event_.AddReadEvent(e);
-        
+#endif    
             log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
                     link->ip(), link->port(), link->fd());
 
@@ -285,12 +309,13 @@ void Server::ProcessWriteEvent()
             if (rc == 2) {
                 continue;
             }
-
+#if 0
             //到这里表示写完了要发给slave 的信息
             Event e;
             e.fd_ = slave_1_->link_->fd();
             e.ptr_ = slave_1_;
             event_.DelWriteEvent(e);
+#endif
             continue;
         }
 
@@ -304,10 +329,12 @@ void Server::ProcessWriteEvent()
 
         //到这里说明已经写完了
         //移除可写事件
+#if 0
         Event e;
         e.fd_ = cli->fd();
         e.ptr_ = cli;
         event_.DelWriteEvent(e);
+#endif
     }
 }
 
@@ -343,28 +370,38 @@ void Server::ProcessTimeEvent()
 
     if(time_event_.empty()) {
         server_can_write_ = true;
-        time_out_ = -1;
+        //time_out_ = -1;
+#if 0
         Event e;
         e.fd_ = slave1_->fd();
         e.ptr_ = slave_1_;
         event_.AddReadEvent(e);
+#endif
     }
 }
+#endif
 
 void Server::DeleteClient(Client *c)
 {
+#if 0
     Event e;
     e.fd_ = c->fd();
     event_.DelReadEvent(e);
-    
+#endif
+  
     DeleteClient(c->fd());
+    
     delete c;
 }
 
 void Server::ConnectSlave()
 {
-    int ret = 
-        slave1_->Connect(config_.slave1_ip_.c_str(), config_.slave1_port_);
+    int ret = -1;
+    ret = slave1_->Connect(config_.slave1_ip_.c_str(), config_.slave1_port_);
+    fprintf(stderr, "ip: %s, port: %d\n", config_.slave1_ip_.c_str(), config_.slave1_port_);
+    fprintf(stderr, "connect error: %s, %d\n", strerror(errno), errno);
+    assert(ret != -1);
+#if 0
     if (ret == -1) {
         struct timeval tv;
         gettimeofday(&tv, NULL);
@@ -372,8 +409,11 @@ void Server::ConnectSlave()
         TimeEvent te(slave1_, (tv.tv_sec + 2) * 1000000 + tv.tv_usec, config_.slave1_ip_, config_.slave1_port_);
         time_event_.push_back(te);
     }
+#endif
     
     ret = slave2_->Connect(config_.slave2_ip_.c_str(), config_.slave2_port_);
+    assert(ret != -1);
+#if 0
     if (ret == -1) {
         struct timeval tv;
         gettimeofday(&tv, NULL);
@@ -381,13 +421,127 @@ void Server::ConnectSlave()
         TimeEvent te(slave2_, (tv.tv_sec + 2) * 1000000 + tv.tv_usec, config_.slave2_ip_, config_.slave2_port_);
         time_event_.push_back(te);
     }
+#endif
 
-    if (time_event_.empty()) {
+    //if (time_event_.empty()) {
         server_can_write_ = true;
-        time_out_ = -1;
+        //time_out_ = -1;
+        struct event *read_event = 
+            event_new(base_, slave1_->fd(), 
+                    EV_READ | EV_PERSIST, Server::SlaveReadCB, slave_1_);
+        assert(read_event != NULL);
+        ret = event_add(read_event, NULL);
+        assert(ret != -1);
+        slave_1_->set_read_event(read_event);
+#if 0
         Event e;
         e.fd_ = slave1_->fd();
         e.ptr_ = slave_1_;
         event_.AddReadEvent(e);
+#endif
+
+    //}
+}
+
+void Server::ListenCB(int fd, short what, void *arg)
+{
+    Server *server = (Server *)arg;
+    Socket *link = server->socket_->Accept();
+    if (link == NULL) {
+        log_error("Accept error:[%s]", strerror(errno));
+        return ;
+    }
+
+    link->SetNonBlock();
+    
+    Client *cli = new Client(server, link, server->slave_1_, NULL, NULL);
+    server->AddClient(cli);
+    
+    struct event *read_event = 
+        event_new(server->base_, link->fd(), EV_READ | EV_PERSIST, Server::ClientReadCB, cli);
+    assert(read_event != NULL);
+    int ret = event_add(read_event, NULL);
+    assert(ret != -1);
+
+    cli->set_read_event(read_event);
+
+#if 0
+    Event e;
+    e.fd_ = link->fd();
+    e.ptr_ = cli;
+    event_.AddReadEvent(e);
+#endif
+
+    log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
+            link->ip(), link->port(), link->fd());
+
+    return ;
+}
+
+void Server::ClientReadCB(int fd, short what, void *arg)
+{
+    Client *cli = (Client *)arg;
+    int rc = cli->Read(/*slave_1_*/);
+    if (rc == -1) {
+        cli->server_->DeleteClient(cli);//close the client
     }
 }
+
+void Server::ClientWriteCB(int fd, short what, void *arg)
+{
+        Client *cli = (Client *)arg;
+        int rc = cli->Write();
+        if (rc == -1) {
+            cli->server_->DeleteClient(cli);//close the client
+        } else if (rc == 2) {
+            return ;
+        }
+
+        //到这里说明已经写完了
+        //移除可写事件
+#if 0
+        Event e;
+        e.fd_ = cli->fd();
+        e.ptr_ = cli;
+        event_.DelWriteEvent(e);
+#endif
+        event_free(cli->write_event());
+        cli->set_write_event(NULL);
+        
+        return ;
+}
+
+void Server::SlaveReadCB(int fd, short what, void *arg)
+{
+    Slave *s = (Slave *)arg;
+    int rc = s->Read();
+    if (rc == 2) {
+        return ;
+    }
+
+    //到这里表示读完了slave 发来的信息
+    return ;
+}
+    
+void Server::SlaveWriteCB(int fd, short what, void *arg)
+{
+    Slave *s = (Slave *)arg;
+    int rc = s->Write();
+    if (rc == 2) {
+        return ;
+    }
+
+    //到这里表示写完了要发给slave 的信息
+    event_free(s->write_event());
+    s->set_write_event(NULL);
+
+#if 0
+    Event e;
+    e.fd_ = slave_1_->link_->fd();
+    e.ptr_ = slave_1_;
+    event_.DelWriteEvent(e);
+#endif
+
+    return ;
+}
+

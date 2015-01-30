@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
         return -1;
     }
     
-
+#if 0
     std::string a_key("a");
     std::string b_key("b");
     std::string c_key("c");
@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
     printf("val: |%s|\n", get.c_str());
     cli.Get(h_key, &get);
     printf("val: |%s|\n", get.c_str());
+#endif
 
 #if 0
     Client cli(true); //分布式
@@ -99,10 +100,8 @@ int main(int argc, char *argv[])
 #endif
 
 
-#if 0
     Test t(&cli);
     t.Run();
-#endif
 
     return 0;
 }

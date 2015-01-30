@@ -11,7 +11,7 @@
 #include "socket.h"
 
 Socket::Socket(): 
-    fd_(-1), port_(-1), is_noblocked_(false) 
+    fd_(-1), port_(-1), is_noblocked_(false)
 {
     ip_[0] = '\0';
     
@@ -22,7 +22,7 @@ Socket::Socket():
 }
 
 Socket::Socket(const char *ip, int port): 
-    fd_(-1), port_(port), is_noblocked_(false) 
+    fd_(-1), port_(port), is_noblocked_(false)
 {
     strcpy(ip_, ip);
     
@@ -60,7 +60,7 @@ char *Socket::ip()
     return ip_;
 }
 
-int Socket::set_noblock()
+int Socket::SetNonBlock()
 {
     int flags;
 
@@ -119,13 +119,13 @@ int Socket::Connect()
     return 0;
 }
 
-void Socket::set_reuseAddr()
+void Socket::SetReuseAddr()
 {
     int on = 1;                          
     setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
 }
 
-void Socket::set_linger()
+void Socket::SetLinger()
 {
     struct linger optval;
     optval.l_onoff = 1;
@@ -133,17 +133,17 @@ void Socket::set_linger()
     setsockopt(fd_, SOL_SOCKET, SO_LINGER, (char *)&optval, sizeof(struct linger));
 }
 
-void Socket::set_rcv_buf(int size)
+void Socket::SetRcvBuf(int size)
 {
     setsockopt(fd_, SOL_SOCKET, SO_RCVBUF, (char *)&size, sizeof(size));
 }
 
-void Socket::set_snd_buf(int size)
+void Socket::SetSndBuf(int size)
 {
     setsockopt(fd_, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(size));
 }
 
-void Socket::set_no_nagle()
+void Socket::SetNoNagle()
 {
     int opt;
     socklen_t optlen;

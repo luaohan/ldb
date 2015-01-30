@@ -33,8 +33,8 @@ class Acceptor {
         bool IsNoblocked() const;
        
         //if uses these, call before Listen()
-        int set_noblock();
-        void set_reuseAddr();
+        int SetNonBlock();
+        void SetReuseAddr();
     
     private:
         int fd_;

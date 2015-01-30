@@ -7,10 +7,12 @@
 #include <string>
 #include <iostream>
 #include <vector>
+
 #include <leveldb/db.h>
 #include <leveldb/slice.h>
+#include <event2/event.h>
 
-#include <net/event.h>
+//#include <net/event.h>
 #include <net/socket.h>
 #include <util/config.h>
 
@@ -30,20 +32,29 @@ public:
     int Run(const char *config_file);
     
     Client *FindClient(int fd);
+    static void ClientWriteCB(int fd, short what, void *arg);
+    static void SlaveWriteCB(int fd, short what, void *arg);
+
+    void AddClient(Client *cli);
 
 private:
+#if 0
     int ProcessEvent();
     void ProcessReadEvent();
     void ProcessWriteEvent();
     void ProcessTimeEvent();
+#endif
     void DeleteClient(Client *c);
 
-    void AddClient(Client *cli);
     void DeleteClient(int fd);
 
     void ConnectSlave();
 
     int CreateServer();
+
+    static void ListenCB(int fd, short what, void *arg);
+    static void ClientReadCB(int fd, short what, void *arg);
+    static void SlaveReadCB(int fd, short what, void *arg);
 
 private:
     leveldb::Options options_;
@@ -53,14 +64,19 @@ private:
     
     std::vector<Client *> clients_;
     
-    int time_out_;
+    //int time_out_;
 
 public:
+#if 0
     Epoll event_;
     Event fired_read_[1024];
     Event fired_write_[1024];
-    
+   
     std::vector<TimeEvent> time_event_;
+#endif
+
+    struct event_base *base_;
+    struct event *event_;
 
     Acceptor *socket_;
     

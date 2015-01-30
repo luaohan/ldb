@@ -48,7 +48,7 @@ char *Acceptor::ip()
     return ip_;
 }
 
-int Acceptor::set_noblock()
+int Acceptor::SetNonBlock()
 {
     int flags;
     if ((flags = fcntl(fd_, F_GETFL, NULL)) < 0) {
@@ -140,7 +140,7 @@ ReAccept:
     return socket;
 }
 
-void Acceptor::set_reuseAddr()
+void Acceptor::SetReuseAddr()
 {
     int on = 1;
     setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));

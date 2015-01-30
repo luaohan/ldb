@@ -21,6 +21,10 @@ class Socket {
         //error: return -1
         int Connect(const char *ip, int port);
         int Connect();
+        
+        int fd() const;
+        int port() const;
+        char *ip(); 
 
         void set_fd(int fd) {
             fd_ = fd;
@@ -30,19 +34,15 @@ class Socket {
             port_ = port;
         }
 
-        int fd() const;
-        int port() const;
-        char *ip(); 
-
         bool IsNoblocked() const;
     
         //if uses these, call before Connect()
-        int set_noblock();
-        void set_reuseAddr(); 
-        void set_linger();
-        void set_no_nagle();
-        void set_rcv_buf(int size);
-        void set_snd_buf(int size);
+        int SetNonBlock();
+        void SetReuseAddr(); 
+        void SetLinger();
+        void SetNoNagle();
+        void SetRcvBuf(int size);
+        void SetSndBuf(int size);
 
         //just like read() and write()
         //ok: return the size of read

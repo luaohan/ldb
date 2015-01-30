@@ -4,9 +4,11 @@ TARGET:=dbserver
 
 
 CXXFLAGS := -g -O0 -I../../opensource/leveldb/include -I../
+
 LDFLAGS := -L../net -Wl,-rpath=../net -lldbnet \
 	-L../util -Wl,-rpath=../util -lldbutil \
-	-L../../opensource/leveldb -Wl,-rpath=../../opensource/leveldb -lleveldb
+	-L../../opensource/leveldb -Wl,-rpath=../../opensource/leveldb -lleveldb \
+	-L../../opensource/libevent -Wl,-rpath=../../opensource/libevent -levent
 
 $(TARGET): $(OBJ) 
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
