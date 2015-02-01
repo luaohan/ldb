@@ -11,7 +11,7 @@
 #include "socket.h"
 
 Socket::Socket(): 
-    fd_(-1), port_(-1), is_noblocked_(false)
+    fd_(-1), port_(-1), is_noblocked_(false), event_(NULL)
 {
     ip_[0] = '\0';
     
@@ -22,7 +22,7 @@ Socket::Socket():
 }
 
 Socket::Socket(const char *ip, int port): 
-    fd_(-1), port_(port), is_noblocked_(false)
+    fd_(-1), port_(port), is_noblocked_(false), event_(NULL)
 {
     strcpy(ip_, ip);
     
@@ -34,6 +34,10 @@ Socket::Socket(const char *ip, int port):
 
 Socket::~Socket()
 {
+    if (event_ != NULL) {
+        event_free(event_);
+    }
+
     Close();
 }
 
@@ -238,4 +242,13 @@ int Socket::BlockWrite(char *buffer, int size)
     }
 
     return size;
+}
+
+struct event* Socket::event() const{
+    return event_;
+}
+
+void Socket::set_event(struct event *e)
+{
+    event_ = e;
 }

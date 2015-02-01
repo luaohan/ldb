@@ -5,33 +5,33 @@
 #define _SLAVE_H_
 
 #include <vector>
+#include <event2/event.h>
 #include <util/protocol.h>
 
+class Server;
 class Client;
 class Socket;
-class Server;
 
 class Slave {
     public:
-        Slave(Socket *link, Server *server, struct event *read_event
-                , struct event *write_event):
+        Slave(Socket *link, Server *server):
             link_(link),
             server_(server),
-            read_event_(read_event),
-            write_event_(write_event),
             data_pos_(0),
             write_pos_(0),
             data_one_(false),
             data_two_(false),
-            flag_(false){}
+            flag_(false),
+            time_event_(NULL)
+            {}
 
-        ~Slave(){
-            if (read_event_ != NULL) {
-                event_free(read_event_);
+        ~Slave() {
+            if (link_ != NULL) {
+                delete link_;
             }
-
-            if (write_event_ != NULL) {
-                event_free(write_event_);
+            
+            if (time_event_ != NULL) {
+                event_free(time_event_);
             }
         }
 
@@ -40,28 +40,15 @@ class Slave {
         //没写完,return 2
         int Read();
         int Write();
-        
+
         std::vector<Client *> clients_;
         Socket *link_;
+        Server *server_;
 
-        struct event *read_event() const {
-            return read_event_;
-        }
-
-        struct event *write_event() const {
-            return write_event_;
-        }
-
-        void set_read_event(struct event *e) {
-            read_event_ = e;
-        }
-
-        void set_write_event(struct event *e) {
-            write_event_ = e;
-        }
+        struct event* time_event() const;
+        void set_time_event(struct event *e);
 
     private:
-        Server *server_;
 
         int data_pos_;
         int write_pos_;
@@ -71,9 +58,7 @@ class Slave {
         char client_flag_[sizeof(short)];
         bool flag_;
 
-        struct event *read_event_;
-        struct event *write_event_;
-
+        struct event *time_event_;
 };
 
 

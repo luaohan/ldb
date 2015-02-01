@@ -11,7 +11,7 @@
 #include "socket.h"
 
 Acceptor::Acceptor():
-    fd_(-1), port_(-1), backlog_(-1), is_noblocked_(false)
+    fd_(-1), port_(-1), backlog_(-1), is_noblocked_(false), event_(NULL)
 {
     ip_[0] = '\0';
 
@@ -22,6 +22,10 @@ Acceptor::Acceptor():
 
 Acceptor::~Acceptor()
 {
+    if (event_ != NULL) {
+        event_free(event_);
+    }
+    
     if ( fd_ > 0 ) {
         close(fd_);
         fd_ = -1;
@@ -41,11 +45,6 @@ int Acceptor::backlog() const
 int Acceptor::port() const
 {
     return port_;
-}
-
-char *Acceptor::ip()
-{
-    return ip_;
 }
 
 int Acceptor::SetNonBlock()
@@ -146,3 +145,12 @@ void Acceptor::SetReuseAddr()
     setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
 }
 
+struct event* Acceptor::event() const
+{
+    return event_;
+}
+
+void Acceptor::set_event(struct event *e)
+{
+    event_ = e;
+}

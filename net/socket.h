@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <event2/event.h>
 
 class Socket {
 
@@ -61,11 +62,16 @@ class Socket {
         //error: return -1;
         int BlockWrite(char *buffer, int size);
 
+        struct event* event() const;
+        void set_event(struct event *e);
+
     private:
         int fd_;
         char ip_[INET_ADDRSTRLEN];
         int port_;
         bool is_noblocked_;
+
+        struct event *event_;
 
     private:
         //No copying allowed

@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <event2/event.h>
 
 class Socket;
 
@@ -25,16 +26,19 @@ class Acceptor {
         Socket *Accept();
         
         void Close();
+
         int backlog() const;
         int fd() const;
         int port() const;
-        char *ip(); //error: return NULL
        
         bool IsNoblocked() const;
        
-        //if uses these, call before Listen()
         int SetNonBlock();
+        //if uses these, call before Listen()
         void SetReuseAddr();
+
+        struct event *event() const;
+        void set_event(struct event *e);
     
     private:
         int fd_;
@@ -42,7 +46,9 @@ class Acceptor {
         int port_;
         int backlog_;
         bool is_noblocked_;
-    
+        
+        struct event *event_;
+        
     private:
         //No copying allowed
         Acceptor(const Acceptor &);

@@ -163,3 +163,13 @@ int Slave::Write()
     
     return 0;
 }
+
+struct event* Slave::time_event() const 
+{
+    return time_event_;
+}
+
+void Slave::set_time_event(struct event *e)
+{
+    time_event_ = e;
+}

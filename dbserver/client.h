@@ -5,8 +5,7 @@
 #define _LDB_CLIENT_H_
 
 #include <stdio.h>
-#include <event2/event.h>
-
+#include <vector>
 #include <util/protocol.h>
 #include <net/socket.h>
 
@@ -15,13 +14,10 @@ class Slave;
 
 class Client {
 public:
-    Client(Server *server, Socket *link, Slave *slave, struct event *read_event,
-            struct event *write_event)
-        : server_(server),
+    Client(Server *server, Socket *link, std::vector<Slave *> slaves): 
+        server_(server),
         link_(link),
-        slave_(slave),
-        read_event_(read_event),
-        write_event_(write_event),
+        slaves_(slaves),
         data_pos_(0), 
         write_pos_(0), 
         data_one_(false), 
@@ -38,37 +34,16 @@ public:
         if (link_ != NULL) {
             delete link_;
         }
-
-        if (read_event_ != NULL) {
-            event_free(read_event_);
-        }
-
-        if (write_event_ != NULL) {
-            event_free(write_event_);
-        }
     }
 
-    int Read(/*Slave *slave*/);
+    int fd() const {
+        return link_->fd();
+    }
+    
+    int Read();
     int Write();
-    int fd() const { return link_->fd(); }
-    
+        
     int ProcessCmd();
-   
-    struct event *read_event() const {
-        return read_event_;
-    }
-    
-    struct event *write_event() const {
-        return write_event_;
-    }
-
-    void set_read_event(struct event *e) {
-        read_event_ = e;
-    }
-    
-    void set_write_event(struct event *e) {
-        write_event_ = e;
-    }
 
 public:
     Server *server_;
@@ -77,7 +52,6 @@ public:
     char head_to_slave_[HEAD_LEN];
     char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
     char *big_recv_;
-    
 
 private:
     //ok: return 0
@@ -98,8 +72,12 @@ private:
     //return 2, 代表没有写完
     int WritePacket();
 
+    void WriteToSlave();
+    void AddWriteEvent();
+
 private:
-    Slave *slave_;
+
+    std::vector<Slave *> slaves_;
 
     char key_[MAX_KEY_LEN];
     char val_[MAX_VAL_LEN];
@@ -127,9 +105,6 @@ private:
     
     bool first_to_slave_;
     
-    struct event *read_event_;
-    struct event *write_event_;
-
 };
 
 

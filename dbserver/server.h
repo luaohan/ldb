@@ -12,7 +12,6 @@
 #include <leveldb/slice.h>
 #include <event2/event.h>
 
-//#include <net/event.h>
 #include <net/socket.h>
 #include <util/config.h>
 
@@ -32,20 +31,13 @@ public:
     int Run(const char *config_file);
     
     Client *FindClient(int fd);
-    static void ClientWriteCB(int fd, short what, void *arg);
-    static void SlaveWriteCB(int fd, short what, void *arg);
-
     void AddClient(Client *cli);
+    
+    static void ClientReadWriteCB(int fd, short what, void *arg);
+    static void SlaveReadWriteCB(int fd, short what, void *arg);
 
 private:
-#if 0
-    int ProcessEvent();
-    void ProcessReadEvent();
-    void ProcessWriteEvent();
-    void ProcessTimeEvent();
-#endif
     void DeleteClient(Client *c);
-
     void DeleteClient(int fd);
 
     void ConnectSlave();
@@ -55,6 +47,7 @@ private:
     static void ListenCB(int fd, short what, void *arg);
     static void ClientReadCB(int fd, short what, void *arg);
     static void SlaveReadCB(int fd, short what, void *arg);
+    static void ConnectSlaveCB(int fd, short what, void *arg);
 
 private:
     leveldb::Options options_;
@@ -63,32 +56,19 @@ private:
     leveldb::DB *db_;
     
     std::vector<Client *> clients_;
+
+    int no_conn_slave_nums;
     
-    //int time_out_;
-
 public:
-#if 0
-    Epoll event_;
-    Event fired_read_[1024];
-    Event fired_write_[1024];
-   
-    std::vector<TimeEvent> time_event_;
-#endif
-
     struct event_base *base_;
-    struct event *event_;
+    struct event *signal_event_;
 
     Acceptor *socket_;
-    
-    Socket *slave1_;
-    Socket *slave2_;
-    
-    Slave *slave_1_;
+    std::vector<Slave *> slaves_;
 
     Config config_;
 
     bool server_can_write_;
-
 };
 
 

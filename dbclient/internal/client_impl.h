@@ -2,7 +2,6 @@
 // Yan Gaofeng (yangaofeng@360.cn)
 
 #include <vector>
-
 #include <dbclient/client.h>
 #include <net/socket.h>
 

@@ -5,7 +5,7 @@
 
 master_db_directory/
 master_log/
-slave_1_db_directory/
-slave_1_log/
-slave_2_db_directory/
-slave_2_log/
+slave1_db_directory/
+slave1_log/
+slave2_db_directory/
+slave2_log/

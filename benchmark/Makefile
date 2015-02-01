@@ -17,6 +17,9 @@ LDFLAGS := -L../net \
 	-L../../opensource/leveldb \
 	-lleveldb \
 	-Wl,-rpath=../../opensource/leveldb \
+	-L../../opensource/libevent \
+	-levent \
+	-Wl,-rpath=../../opensource/event\
 	-L../../opensource/jsoncpp \
 	-ljsoncpp \
 	-Wl,-rpath=../../opensource/jsoncpp \

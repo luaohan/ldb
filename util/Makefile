@@ -4,7 +4,15 @@ TARGET:=libldbutil.so
 
 
 CXXFLAGS := -g -O0 -fPIC
-LDFLAGS := 
+
+CXXFLAGS := -g -O0 -fPIC\
+	-I../../opensource/jsoncpp/include \
+	-I../../
+
+LDFLAGS :=  \
+	-L../../opensource/jsoncpp \
+	-Wl,-rpath=../../opensource/jsoncpp \
+	-ljsoncpp \
 
 $(TARGET): $(OBJ) 
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $^ -o $@

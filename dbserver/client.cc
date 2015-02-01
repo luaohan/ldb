@@ -14,7 +14,6 @@
 #include <dbserver/client.h>
 #include <dbserver/server.h>
 #include <dbserver/slave.h>
-#include <net/event.h>
 
 int Client::ReadHead()
 {
@@ -114,29 +113,24 @@ int Client::ReadBody(/*Slave *slave*/)
             client_flag_ = ntohs(*((short *)&recv_[body_len_ - sizeof(short)]));
         }
 
-        if ( value_len > 0) {
+        if (value_len > 0) {
             memcpy(val_, recv_ + sizeof(short) + key_len, value_len);
         }
 
         data_one_ = false;
         data_pos_ = 0;
-    
+
+
+
+        key_[key_len] = '\0';
+        val_[value_len] = '\0';
+        printf("key:|%s|, val:|%s|\n", key_, val_);
+   
+
+
         if (first_to_slave_ == true) {
-            slave_->clients_.push_back(this);
-            ret = slave_->Write();
-            if (ret == 2) { //没写完, 将写事件加入epoll 
-#if 0
-                Event e;
-                e.fd_ = slave->link_->fd();
-                e.ptr_ = slave;
-                server_->event_.AddWriteEvent(e);
-#endif
-                struct event *e = event_new(server_->base_, slave_->link_->fd(),
-                        EV_WRITE | EV_PERSIST, Server::SlaveWriteCB, slave_);
-                assert(e != NULL);
-                event_add(e, NULL);
-                slave_->set_write_event(e);
-            }
+            //向 slave_server 写数据
+            WriteToSlave();
         }
 
         return 0;
@@ -186,7 +180,7 @@ int Client::ReadBody(/*Slave *slave*/)
         value_len -= sizeof(short);
         client_flag_ = ntohs(*((short *)&big_recv_[body_len_ - sizeof(short)]));
     }
-    
+
     if (value_len > 0) {
         if (big_value_ == NULL) {
             big_value_ = (char *)malloc(value_len);
@@ -202,21 +196,8 @@ int Client::ReadBody(/*Slave *slave*/)
     data_pos_ = 0;
 
     if (first_to_slave_ == true) {
-        slave_->clients_.push_back(this);
-        ret = slave_->Write();
-        if (ret == 2) { //没写完, 将写事件加入epoll 
-#if 0
-            Event e;
-            e.fd_ = slave->link_->fd();
-            e.ptr_ = slave;
-            server_->event_.AddWriteEvent(e);
-#endif        
-            struct event *e = event_new(server_->base_, slave_->link_->fd(),
-                    EV_WRITE | EV_PERSIST, Server::SlaveWriteCB, slave_);
-            assert(e != NULL);
-            event_add(e, NULL);
-            slave_->set_write_event(e);
-        }
+        //向 slave_server 写数据
+        WriteToSlave();
     } else {
         free(big_recv_);
         big_recv_ = NULL;
@@ -275,7 +256,7 @@ int Client::SetCommand()
 
         leveldb::Slice key(key_, key_len_);
         int value_len = body_len_ - key_len_ - sizeof(short);
-        
+
         if (big_value_ == NULL) {
 
             leveldb::Slice val(val_, value_len);
@@ -313,18 +294,8 @@ int Client::SetCommand()
     ret = WritePacket();
 
     if (ret == 2) { // 没写完
-        //将写事件加入epoll
-#if 0
-        Event e;
-        e.fd_ = link_->fd();
-        e.ptr_ = this;
-        server_->event_.AddWriteEvent(e);
-#endif
-        struct event *e = event_new(server_->base_, link_->fd(),
-                EV_WRITE | EV_PERSIST, Server::ClientWriteCB, this);
-        assert(e != NULL);
-        event_add(e, NULL);
-        write_event_ = e;
+        //将写事件加入libevent
+        AddWriteEvent();
 
     } else if (ret == -1) { //error
         return -1;
@@ -339,6 +310,7 @@ int Client::GetCommand()
 
     std::string val;
     int ret = server_->Get(key, &val);
+    printf("key:|%s|, val:|%s|, ret:%d\n", key.data(), val.c_str(), ret);
     if (ret < 0) {
         //key not exist 
         ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_NO_THE_KEY);
@@ -349,7 +321,8 @@ int Client::GetCommand()
 
             ret = FillPacket(replay_, MAX_PACKET_LEN, val.c_str(), val.size(), 
                     NULL, 0, REPLAY_OK);
-
+            printf("pack_len: %d\n", ret);
+            
         } else {
             int size = val.size() + sizeof(int) + sizeof(short) * 2;
             if (big_value_ == NULL) {
@@ -370,20 +343,11 @@ int Client::GetCommand()
     replay_len_ = ret;
     ret = WritePacket();
 
-    if (ret == 2) { // 没写完
+    printf("ret: %d\n", ret);
 
-        //将写事件加入epoll
-#if 0
-        Event e;
-        e.fd_ = link_->fd();
-        e.ptr_ = this;
-        server_->event_.AddWriteEvent(e);
-#endif
-        struct event *e = event_new(server_->base_, link_->fd(),
-                EV_WRITE | EV_PERSIST, Server::ClientWriteCB, this);
-        assert(e != NULL);
-        event_add(e, NULL);
-        write_event_ = e;
+    if (ret == 2) { // 没写完
+        //将写事件加入libevent
+        AddWriteEvent();
 
     } else if (ret == -1) { //error
         return -1;
@@ -414,18 +378,9 @@ int Client::DelCommand()
     replay_len_ = ret;
     ret = WritePacket();
     if (ret == 2) { // 没写完
-        //将写事件加入epoll
-#if 0
-        Event e;
-        e.fd_ = link_->fd();
-        e.ptr_ = this;
-        server_->event_.AddWriteEvent(e);
-#endif
-        struct event *e = event_new(server_->base_, link_->fd(),
-                EV_WRITE | EV_PERSIST, Server::ClientWriteCB, this);
-        assert(e != NULL);
-        event_add(e, NULL);
-        write_event_ = e;
+        //将写事件加入libevent
+        AddWriteEvent();
+    
     } else if (ret == -1) { //error
         return -1;
     }
@@ -433,12 +388,11 @@ int Client::DelCommand()
     return 0;
 }
 
-int Client::Read(/*Slave *slave*/)
+int Client::Read()
 {
     //读数据包
     int ret;
     if (data_one_ == false) {
-        
         ret = ReadHead();  //读包头
         if (ret == 1 || ret == -1) {
             return -1;
@@ -447,8 +401,7 @@ int Client::Read(/*Slave *slave*/)
         }
     }
 
-    ret = ReadBody(/*slave*/); //读包体
-
+    ret = ReadBody(); //读包体
     if (ret == 1 || ret == -1) {
         return -1;
     } else if (ret == 2) { //包体不够
@@ -497,3 +450,32 @@ int Client::Write()
     }
 }
 
+void Client::WriteToSlave()
+{
+    std::vector<Slave *>::iterator i = slaves_.begin();
+    for (; i != slaves_.end(); i++) {
+        Slave *slave = *i;
+        slave->clients_.push_back(this);
+        int ret = slave->Write();
+        if (ret == 2) { //没写完, 将写事件加入libevent
+            event_free(slave->link_->event());
+
+            struct event *e = event_new(server_->base_, slave->link_->fd(),
+                    EV_READ | EV_WRITE | EV_PERSIST, Server::SlaveReadWriteCB, slave);
+            event_add(e, NULL);
+            slave->link_->set_event(e);
+        }
+    }
+
+}
+
+void Client::AddWriteEvent()
+{
+    //因为里边本来有读事件
+    //所以这里先释放读事件，再添加读写事件
+    event_free(link_->event());
+    struct event *e = event_new(server_->base_, link_->fd(),
+            EV_READ | EV_WRITE | EV_PERSIST, Server::ClientReadWriteCB, this);
+    event_add(e, NULL);
+    link_->set_event(e);
+}
