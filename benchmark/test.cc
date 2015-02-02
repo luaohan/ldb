@@ -93,6 +93,8 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
     Status status;
     status = client_->Set(key, value);
     if (!status.IsOk()) {
+        printf("111\n");
+        exit(0);
         cout << "set key: " << KEY(key) << " failed" << endl;
         return false;
     }
@@ -103,10 +105,14 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
     std::string response;
     status = client_->Get(key, &response);
     if (!status.IsOk()) {
+        printf("222\n");
+        exit(0);
         cout << "get key: " << KEY(key) << " failed" << endl;
         return false;
     }
     if (response != value) {
+        printf("333\n");
+        exit(0);
         cout << "get key: " << KEY(key) 
             << " failed, invalid result: "
             << response << endl;
@@ -114,11 +120,15 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
     }
     status = client_->Del(key);
     if (!status.IsOk()) {
+        printf("444\n");
+        exit(0);
         cout << "del key: " << KEY(key) << " failed" << endl;
         return false;
     }
     status = client_->Get(key, &response);
     if (!status.IsKeyNotExist()) {
+        printf("555\n");
+        exit(0);
         cout << "after del, get key: " 
             << KEY(key) << " should not success" << endl;
         return false;
@@ -157,7 +167,6 @@ bool Test::Run()
     //key len: 1K, value len: 10K
     ASSERT_TRUE(Binary(1*1024/256, 10*1024/256));
 
-
     //key len: 60K, value len: 1M
     ASSERT_TRUE(Binary(60*1024/256, 1*1024*1024/256)); 
     //key len: 60K, value len: 5M
@@ -166,10 +175,10 @@ bool Test::Run()
     ASSERT_TRUE(Binary(60*1024/256, 10*1024*1024/256)); 
     //key len: 60K, value len: 20M
     ASSERT_TRUE(Binary(60*1024/256, 20*1024*1024/256)); 
+#if 0
     //batch test
     //ASSERT_TRUE(Batch(10000, 1*1024/256, 10*1024/256));
     //ASSERT_TRUE(Batch(1000000, 1*1024/256, 10*1024/256));
-#if 0
     cout << "功能测试完毕，以下是性能测试" << endl;
 
     char key_1[1024];

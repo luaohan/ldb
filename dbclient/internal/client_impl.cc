@@ -162,12 +162,9 @@ Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socke
     char buf[MAX_PACKET_LEN]; 
 
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
-    printf("len:%d\n", len);
     if (master_server_exit_) {
-        printf("master exit\n");
         len += sizeof(short);
     }
-    printf("key:|%s|, key_len:%d, pack_len:%d\n", s_key, key.size(), len);
 
     int ret = socket->BlockWrite(buf, len);
     if (ret < 0) {
@@ -195,7 +192,6 @@ Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socke
     int packet_len = ntohl(*((int *)&(buf[0])));
     int body_len = packet_len - HEAD_LEN;
 
-    printf("packet_type:%d, packet_len:%d, body_len: %d\n", packet_type, packet_len, body_len);
     if (body_len <= ONE_M) {
 
         ret = socket->BlockRead(buf, body_len); //读包体
@@ -213,10 +209,6 @@ Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socke
         std::string value(&buf[sizeof(short)], value_len);
         *val = value;
        
-        printf("|%s|\n", value.c_str());
-        printf("|%d|\n", value.size());
-        printf("333\n");
-
         return Status::Ok();
     }
 
@@ -253,10 +245,10 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
         if (socket_slave_1_ == NULL) {
             ConnectSlave1(); //这里先保证slave1 一定存在
         }
-        
+
         return Get(key, val, socket_slave_1_);
     }
-    
+   
     if (hash_) {
         socket_ = GetSocket(key);
     }

@@ -54,7 +54,7 @@ int Config::LoadConfig(const std::string &file_name)
         daemon_ = master_server["deamonize"].asBool();
         log_file_ = master_server["logfile"].asString();
         db_directory_ = master_server["db_directory"].asString();
-        level_ = master_server["level"].asInt();
+        level_ = master_server["log_level"].asInt();
 
         Json::Value slave_array = master_server["slave"];
         for (int i = 0; i < slave_array.size(); i++)
@@ -74,7 +74,7 @@ int Config::LoadConfig(const std::string &file_name)
         daemon_ = slave_server["deamonize"].asBool();
         log_file_ = slave_server["logfile"].asString();
         db_directory_ = slave_server["db_directory"].asString();
-        level_ = slave_server["level"].asInt();
+        level_ = slave_server["log_level"].asInt();
     }
 
     return 0;       

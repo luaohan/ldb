@@ -43,7 +43,9 @@ int Slave::Read()
     //这里假设slave 只会成功，所以只解析cli_fd
     short cli_fd = ntohs(*((short *)&(recv_[HEAD_LEN])));  
     Client *cli = server_->FindClient(cli_fd);
-    cli->ProcessCmd();
+    if (cli->done_ == false) {
+        cli->ProcessCmd();
+    }
 
     return 0;
 }
@@ -114,11 +116,6 @@ int Slave::Write()
         }
         
         //到这里说明包体已经写完
-        if (cli->big_recv_ != NULL) {
-            free(cli->big_recv_);
-            cli->big_recv_ = NULL;
-        }
-        
         write_pos_ = 0;
         data_two_ = true;
     }

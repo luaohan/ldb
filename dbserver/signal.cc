@@ -37,6 +37,7 @@ static void SigChild(int signo)
     int stat;
 
     while((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+        printf("child server exit\n");
         log_info("child server exit\n");
     }
 

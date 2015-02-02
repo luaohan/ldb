@@ -258,8 +258,6 @@ void Server::ListenCB(int fd, short what, void *arg)
 
     log_info("---<create a client:[ip:%s],[port:%d],[fd:%d]>---", 
             link->ip(), link->port(), link->fd());
-    
-    printf("a new connect\n");
 
     return ;
 }
@@ -317,6 +315,7 @@ void Server::ClientReadWriteCB(int fd, short what, void *arg)
 {
     if (what & EV_READ) {
         ClientReadCB(fd, what, arg);
+        return ;
     }
    
     if (what & EV_WRITE) {
@@ -327,7 +326,7 @@ void Server::ClientReadWriteCB(int fd, short what, void *arg)
         } else if (rc == 2) {
             return ;
         }
-
+        
         //到这里说明已经写完了
         //移除可写事件
         //先将原来的事件删除，再添加读事件
@@ -347,6 +346,7 @@ void Server::SlaveReadWriteCB(int fd, short what, void *arg)
 {
     if (what & EV_READ) {
         SlaveReadCB(fd, what, arg);
+        return ;
     }
 
     if (what & EV_WRITE) {

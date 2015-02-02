@@ -57,6 +57,7 @@ int Client::ReadHead()
             && packet_type != GET_CMD) {
 
         first_to_slave_ = true;
+        done_ = false;
         memcpy(head_to_slave_, recv_, HEAD_LEN);
     }
     
@@ -119,14 +120,6 @@ int Client::ReadBody(/*Slave *slave*/)
 
         data_one_ = false;
         data_pos_ = 0;
-
-
-
-        key_[key_len] = '\0';
-        val_[value_len] = '\0';
-        printf("key:|%s|, val:|%s|\n", key_, val_);
-   
-
 
         if (first_to_slave_ == true) {
             //向 slave_server 写数据
@@ -214,7 +207,7 @@ int Client::WritePacket()
     } else {
         ret = link_->WriteData(big_value_ + write_pos_, replay_len_ - write_pos_);
     }
-
+    
     if (ret < replay_len_ - write_pos_) {  
         if (ret == 0) {
             log_error("write error, fd[%d], port[%d], ip[%s]",
@@ -251,6 +244,8 @@ int Client::WritePacket()
 
 int Client::SetCommand() 
 {
+    done_ = true;
+
     int ret;
     if (server_->server_can_write_) {
 
@@ -276,6 +271,11 @@ int Client::SetCommand()
             }   
             free(big_value_);
             big_value_ = NULL;
+
+            if (big_recv_ != NULL) {
+                free(big_recv_);
+                big_recv_ = NULL;
+            }
         }
 
         ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
@@ -289,7 +289,7 @@ int Client::SetCommand()
     } else {
         ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_ERROR);
     }
-
+    
     replay_len_ = ret;
     ret = WritePacket();
 
@@ -310,7 +310,6 @@ int Client::GetCommand()
 
     std::string val;
     int ret = server_->Get(key, &val);
-    printf("key:|%s|, val:|%s|, ret:%d\n", key.data(), val.c_str(), ret);
     if (ret < 0) {
         //key not exist 
         ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_NO_THE_KEY);
@@ -321,7 +320,6 @@ int Client::GetCommand()
 
             ret = FillPacket(replay_, MAX_PACKET_LEN, val.c_str(), val.size(), 
                     NULL, 0, REPLAY_OK);
-            printf("pack_len: %d\n", ret);
             
         } else {
             int size = val.size() + sizeof(int) + sizeof(short) * 2;
@@ -343,8 +341,6 @@ int Client::GetCommand()
     replay_len_ = ret;
     ret = WritePacket();
 
-    printf("ret: %d\n", ret);
-
     if (ret == 2) { // 没写完
         //将写事件加入libevent
         AddWriteEvent();
@@ -358,6 +354,8 @@ int Client::GetCommand()
 
 int Client::DelCommand()
 {
+    done_ = true;
+    
     int ret;
     if (server_->server_can_write_) {
         leveldb::Slice key(key_, key_len_);
@@ -448,6 +446,8 @@ int Client::Write()
     } else if (ret == 2) { //还没写完
         return 2;
     }
+
+    return 0;
 }
 
 void Client::WriteToSlave()

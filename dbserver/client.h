@@ -28,6 +28,7 @@ public:
         big_value_(NULL), 
         cmd_(-1),
         first_to_slave_(false),
+        done_(false),
         client_flag_(-1){}
 
     ~Client() { 
@@ -52,6 +53,8 @@ public:
     char head_to_slave_[HEAD_LEN];
     char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
     char *big_recv_;
+    
+    bool done_;
 
 private:
     //ok: return 0
@@ -104,7 +107,7 @@ private:
     short client_flag_; 
     
     bool first_to_slave_;
-    
+
 };
 
 

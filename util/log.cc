@@ -88,6 +88,7 @@ const char *Log::LevelString(int level)
 
 int Log::Write(int level, const char *fmt, va_list ap)
 {
+
     if (level_ < level) {
         return 0;
     }
@@ -128,9 +129,10 @@ int Log::Write(int level, const char *fmt, va_list ap)
     len = ptr - buf;
     if (write(fd_, buf, len) < 0) {
         //error
+        fprintf(stderr, ":%s\n", strerror(errno));
         return -1;
     }
-   
+  
     current_size_ += len;
    
     if (current_size_ > rotate_size_) {
