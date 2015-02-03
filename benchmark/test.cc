@@ -169,13 +169,13 @@ bool Test::Run()
 
     //key len: 60K, value len: 1M
     ASSERT_TRUE(Binary(60*1024/256, 1*1024*1024/256)); 
+#if 0
     //key len: 60K, value len: 5M
     ASSERT_TRUE(Binary(60*1024/256, 5*1024*1024/256)); 
     //key len: 60K, value len: 10M
     ASSERT_TRUE(Binary(60*1024/256, 10*1024*1024/256)); 
     //key len: 60K, value len: 20M
     ASSERT_TRUE(Binary(60*1024/256, 20*1024*1024/256)); 
-#if 0
     //batch test
     //ASSERT_TRUE(Batch(10000, 1*1024/256, 10*1024/256));
     //ASSERT_TRUE(Batch(1000000, 1*1024/256, 10*1024/256));

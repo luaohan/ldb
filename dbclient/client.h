@@ -8,11 +8,10 @@
 
 class Client {
 public:
-    Client(bool hash, const std::string &slave_conf);
+    Client(const std::string &conf_file);
     ~Client();
 
-    bool Connect(const std::string &ip, int port);
-    void Close();
+    //void Close();
 
     Status Set(const std::string &key, const std::string &value);
     Status Del(const std::string &key);
@@ -21,7 +20,7 @@ public:
     //return -1, 错误
     //return -2, json 文件配置错误
     //return  0, 成功
-    int Init(const std::string &file_name);
+    int Init();
 
 private:
     Client(const Client &c);

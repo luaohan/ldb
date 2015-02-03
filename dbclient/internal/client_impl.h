@@ -5,18 +5,22 @@
 #include <dbclient/client.h>
 #include <net/socket.h>
 
+struct Server {
+    Socket *master_server_; //当master_server 挂掉后，其为 NULL
+    std::vector<Socket *> slave_server_;
+};
+
 class Client::Impl {
 public:
-    Impl(bool hash, const std::string &slave_conf);
+    Impl(const std::string &conf_file);
     ~Impl();
 
     //return -1, 错误
     //return -2, json 文件配置错误
     //return  0, 成功
-    int Init(const std::string &file_name);
-
-    bool Connect(const std::string &ip, int port);
-    void Close();
+    int Init();
+    
+    //void Close();
 
     Status Set(const std::string &key, const std::string &value);
     Status Del(const std::string &key);
@@ -24,29 +28,15 @@ public:
 
 private:
     unsigned int DJBHash(const unsigned char *buf, int len);
-    bool Connect();
-    Socket *GetSocket(const std::string &key);
+    bool ConnectMaster();
+    Server GetServer(const std::string &key);
 
-    void InitSlaveInfo(const std::string &slave_conf);
-    bool ConnectSlave1();
-    bool ConnectSlave2();
-    Status Get(const std::string &key, std::string *value, Socket *socket); 
+    Status Get(const std::string &key, std::string *value, 
+            Socket *socket, bool master_exit);
 
 private:
-    Socket *socket_;
-    std::vector<Socket *> real_server_;
-    std::vector<Socket *> virtual_server_;
-    bool hash_; //是否采用分布式
-
-    bool master_server_exit_;
-    Socket *socket_slave_1_;
-    Socket *socket_slave_2_;
+    std::vector<Server> real_server_;
+    std::vector<Server> virtual_server_;
     
-    std::string slave_1_ip_;
-    std::string slave_2_ip_;
-
-    int slave_1_port_;
-    int slave_2_port_;
+    std::string config_file_;
 };
-
-

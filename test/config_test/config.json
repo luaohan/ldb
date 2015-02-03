@@ -1,0 +1,29 @@
+{
+    "is_master": true,
+        "master_server": {
+            "ip": "0.0.0.0",
+            "port": 8899,
+            "deamonize": false,
+            "logfile": "../master_log/loginfo",
+            "db_directory": "../master_db_directory",
+            "log_level": 4,
+            "slave": [
+            {
+                "ip": "192.168.0.1",
+                "port": 8881
+            },
+            {
+                "ip": "192.168.0.2",
+                "port": 8882
+            }
+            ]
+        },
+        "slave_server": {
+            "ip": "0.0.0.0",
+            "port": 8899,
+            "deamonize": false,
+            "logfile": "../slave_log/loginfo",
+            "db_directory": "../slave_db_directory",
+            "log_level": 4
+        }
+}

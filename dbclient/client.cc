@@ -4,8 +4,8 @@
 #include <internal/client_impl.h>
 #include <assert.h>
 
-Client::Client(bool hash, const std::string &slave_conf) : 
-    impl_(new Impl(hash, slave_conf))
+Client::Client(const std::string &conf_file) : 
+    impl_(new Impl(conf_file))
 {
     assert(impl_ != NULL);
 }
@@ -18,20 +18,12 @@ Client::~Client()
     }
 }
 
-int Client::Init(const std::string &file_name)
+int Client::Init()
 {
-    return impl_->Init(file_name);
+    return impl_->Init();
 }
 
-bool Client::Connect(const std::string &ip, int port)
-{
-    return impl_->Connect(ip, port);
-}
-
-void Client::Close()
-{
-    impl_->Close();
-}
+//void Client::Close() { impl_->Close(); }
 
 Status Client::Set(const std::string &key, const std::string &value)
 {

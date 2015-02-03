@@ -16,66 +16,37 @@
 #include <util/protocol.h>
 #include <internal/client_impl.h>
 
-Client::Impl::Impl(bool hash, const std::string &slave_conf):
-    socket_(NULL), hash_(hash), master_server_exit_(false),
-    socket_slave_1_(NULL), socket_slave_2_(NULL)
+Client::Impl::Impl(const std::string &config_file):
+    config_file_(config_file)
 {
-    if (!hash_) {
-        socket_ = new Socket();
-        assert(socket_ != NULL);
-    }
     
-    InitSlaveInfo(slave_conf);
 }
 
 Client::Impl::~Impl()
 {
-    if (!hash_) {
-        delete socket_;
-    }
+    std::vector<Server>::iterator i = real_server_.begin();
+    std::vector<Socket *>::iterator j;
+    for (; i != real_server_.end(); i++) {
+        if ((*i).master_server_ != NULL) {
+            delete (*i).master_server_;
+        }
 
-    if (hash_) {
-        std::vector<Socket *>::iterator i;
-        for (i = real_server_.begin(); i != real_server_.end(); i++) {
-            delete (*i);
+        if (!(*i).slave_server_.empty()) 
+        {
+            j = (*i).slave_server_.begin();
+            for (; j != (*i).slave_server_.end(); j++) {
+                delete (*j);
+            }
         }
     }
-
-    if (socket_slave_1_ != NULL) {
-        delete socket_slave_1_;
-    }
-
-    if (socket_slave_2_ != NULL) {
-        delete socket_slave_2_;
-    }
 }
 
-bool Client::Impl::Connect(const std::string &ip, int port)
-{
-    int rc = socket_->Connect(ip.c_str(), port);
-    if (rc == -1) {
-        return false;
-    }
-
-    return true;
-}
-
-void Client::Impl::Close()
-{
-    if (!hash_) {
-        socket_->Close();
-    }
-}
+//void Client::Impl::Close(){}
 
 Status Client::Impl::Set(const std::string &key, const std::string &val)
 {
-    if (master_server_exit_) {
-        return Status::ServerExit();
-    }
-    
-    if (hash_) {
-        socket_ = GetSocket(key);
-    }
+    Server s = GetServer(key);
+    Socket *socket = s.master_server_;
 
     const char *s_key = key.c_str();
     const char *s_val = val.c_str();
@@ -87,22 +58,20 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
         int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(),
                 s_val, val.size(), SET_CMD);
 
-        int ret = socket_->BlockWrite(buf, len);
+        int ret = socket->BlockWrite(buf, len);
         if (ret < 0) {
             if (errno == 104) {
-                master_server_exit_ = true;
                 return Status::ServerExit();
             }
             
             return Status::Unknown();
         }
 
-        ret = socket_->BlockRead(buf, HEAD_LEN);
+        ret = socket->BlockRead(buf, HEAD_LEN);
         if (ret < 0) {
             return Status::Unknown();
         }
         if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
-            master_server_exit_ = true;
             return Status::ServerExit();
         }
 
@@ -117,32 +86,29 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), 
             NULL, val.size(), SET_CMD);
 
-    int ret = socket_->BlockWrite(buf, len - val.size());
+    int ret = socket->BlockWrite(buf, len - val.size());
     if (ret < 0) {
         if (errno == 104) {
-            master_server_exit_ = true;
             return Status::ServerExit();
         }
     
         return Status::Unknown();
     }
 
-    ret = socket_->BlockWrite((char *)s_val, val.size());
+    ret = socket->BlockWrite((char *)s_val, val.size());
     if (ret < 0) {
         if (errno == 104) {
-            master_server_exit_ = true;
             return Status::ServerExit();
         }
     
         return Status::Unknown();
     }
 
-    ret = socket_->BlockRead(buf, HEAD_LEN);
+    ret = socket->BlockRead(buf, HEAD_LEN);
     if (ret < 0) {
         return Status::Unknown();
     }
     if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
-        master_server_exit_ = true;
         return Status::ServerExit();
     }
     
@@ -154,7 +120,63 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
     return Status::Ok();
 }
 
-Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socket)
+Status Client::Impl::Get(const std::string &key, std::string *val)
+{
+    Status status;
+    bool master_exit;
+    
+    Server server = GetServer(key);
+    Socket *socket;
+    
+get_again:
+    if (server.master_server_ == NULL) { 
+        //表示 master_server 挂了
+        //获取最后一个slave
+        socket = server.slave_server_.back();
+        master_exit = true;
+    } else {
+
+        socket = server.master_server_;
+        master_exit = false;
+    }
+
+    status = Get(key, val, socket, master_exit);
+    if (status.IsServerExit()) 
+    {
+        if (server.master_server_ == NULL) 
+        {
+            delete server.slave_server_.back();
+            server.slave_server_.pop_back();
+        } else {
+
+            delete server.master_server_;
+            server.master_server_ = NULL;
+        }
+again:
+        if (server.slave_server_.empty()) {
+            return Status::ServerExit();
+        }
+        
+        //返回最后一个元素
+        socket = server.slave_server_.back();
+        int ret = socket->Connect();
+        if (ret == -1) {
+            //有可能连接slave 失败
+            //有几个slave 就有几次Get 的机会
+            delete server.slave_server_.back();
+            server.slave_server_.pop_back();
+            goto again;
+        }
+        
+        goto get_again;
+    } 
+    else {
+        return status;
+    }
+}
+
+Status Client::Impl::Get(const std::string &key, std::string *val, 
+        Socket *socket, bool master_exit)
 {
     assert(socket != NULL);
 
@@ -162,25 +184,25 @@ Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socke
     char buf[MAX_PACKET_LEN]; 
 
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
-    if (master_server_exit_) {
+    
+    if (master_exit) {
         len += sizeof(short);
     }
-
+    
     int ret = socket->BlockWrite(buf, len);
     if (ret < 0) {
         if (errno == 104) {
-            master_server_exit_ = true;
             return Status::ServerExit();
         }
     
         return Status::Unknown();
     }
+    
     ret = socket->BlockRead(buf, HEAD_LEN); //读包头
     if (ret < 0) {
         return Status::Unknown();
     }
     if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
-        master_server_exit_ = true;
         return Status::ServerExit(); //server exit
     }
 
@@ -199,7 +221,6 @@ Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socke
             return Status::Unknown();
         }
         if ((ret > 0 && ret < body_len)|| ret == 0) {
-            master_server_exit_ = true;
             return Status::ServerExit();
         }
 
@@ -223,7 +244,6 @@ Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socke
         return Status::Unknown();
     }
     if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
-        master_server_exit_ = true;
         free(p);
         return Status::ServerExit(); //server exit
     }
@@ -237,135 +257,31 @@ Status Client::Impl::Get(const std::string &key, std::string *val, Socket *socke
     free(p);
 
     return Status::Ok();
-}
-
-Status Client::Impl::Get(const std::string &key, std::string *val)
-{
-    if (master_server_exit_) {
-        if (socket_slave_1_ == NULL) {
-            ConnectSlave1(); //这里先保证slave1 一定存在
-        }
-
-        return Get(key, val, socket_slave_1_);
-    }
-   
-    if (hash_) {
-        socket_ = GetSocket(key);
-    }
-
-    return Get(key, val, socket_);
-
-#if 0
-    const char *s_key = key.c_str();
-    char buf[MAX_PACKET_LEN]; 
-
-    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
-    int ret = socket_->BlockWrite(buf, len);
-    if (ret < 0) {
-        if (errno == 104) {
-            master_server_exit_ = true;
-            return Status::ServerExit();
-        }
-    
-        return Status::Unknown();
-    }
-    ret = socket_->BlockRead(buf, HEAD_LEN); //读包头
-    if (ret < 0) {
-        return Status::Unknown();
-    }
-    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
-        master_server_exit_ = true;
-        return Status::ServerExit(); //server exit
-    }
-
-    short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
-    if (packet_type == REPLAY_NO_THE_KEY) {
-        return Status::KeyNotExist();
-    }
-
-    int packet_len = ntohl(*((int *)&(buf[0])));
-    int body_len = packet_len - HEAD_LEN;
-
-    if (body_len <= ONE_M) {
-        
-        ret = socket_->BlockRead(buf, body_len); //读包体
-        if (ret < 0) {
-            return Status::Unknown();
-        }
-        if ((ret > 0 && ret < HEAD_LEN )|| ret == 0) {
-            master_server_exit_ = true;
-            return Status::ServerExit();
-        }
-
-        //short value_len = ntohs(*((short *)&(buf[0])));
-        int value_len = body_len - sizeof(short);
-
-        std::string value(&buf[sizeof(short)], value_len);
-        *val = value;
-
-        return Status::Ok();
-    }
-
-    char *p = (char *)malloc(body_len);
-    if (p == NULL) {
-        return Status::Unknown();
-    }
-
-    ret = socket_->BlockRead(p, body_len); //读包体
-    if (ret < 0) {
-        free(p);
-        return Status::Unknown();
-    }
-    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
-        master_server_exit_ = true;
-        free(p);
-        return Status::ServerExit(); //server exit
-    }
-
-    //short value_len = ntohs(*((short *)&(buf[0])));
-    int value_len = body_len - sizeof(short);
-
-    std::string value(&p[sizeof(short)], value_len);
-    *val = value;
-
-    free(p);
-
-    return Status::Ok();
-#endif
-
 }
 
 Status Client::Impl::Del(const std::string &key)
 {
-    if (master_server_exit_) {
-        return Status::ServerExit();
-    }
-    
-    if (hash_) {
-        socket_ = GetSocket(key);
-    }
+    Server s = GetServer(key);
+    Socket *socket = s.master_server_;
     
     const char *s_key = key.c_str();
 
     char buf[MAX_PACKET_LEN]; 
-
     int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, DEL_CMD);
-    int ret = socket_->BlockWrite(buf, len);
+    int ret = socket->BlockWrite(buf, len);
     if (ret < 0) {
         if (errno == 104) {
-            master_server_exit_ = true;
             return Status::ServerExit();
         }
     
         return Status::Unknown();
     }
 
-    ret = socket_->BlockRead(buf, HEAD_LEN);
+    ret = socket->BlockRead(buf, HEAD_LEN);
     if (ret < 0) {
         return Status::Unknown();
     }
     if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
-        master_server_exit_ = true;
         return Status::ServerExit(); //server exit
     }
     
@@ -377,9 +293,9 @@ Status Client::Impl::Del(const std::string &key)
     return Status::Ok();
 }
 
-int Client::Impl::Init(const std::string &file_name)
+int Client::Impl::Init()
 {
-    int fd = open(file_name.c_str(), O_RDONLY);
+    int fd = open(config_file_.c_str(), O_RDONLY);
     if (fd < 0) {
         return -1;                         
     }
@@ -412,12 +328,16 @@ int Client::Impl::Init(const std::string &file_name)
     if (node_num <= 0 || node_num > 1000) {
         free(buf);
         close(fd);
-        return -1;
+        return -2;
     }
+    
     virtual_server_.resize(node_num);
 
     std::list<int> all_nums;
-    Socket *socket = NULL;
+
+    Server server;
+    //Socket *socket = NULL;
+    
     Json::Value array = json_object["node_maps"];
     for (int i = 0; i < array.size(); i++)
     {
@@ -430,8 +350,19 @@ int Client::Impl::Init(const std::string &file_name)
             std::string ip = obj[(*iter)]["ip"].asString();
             int port = obj[(*iter)]["port"].asInt();
 
-            socket = new Socket(ip.c_str(), port);
-            real_server_.push_back(socket);
+            //socket = new Socket(ip.c_str(), port);
+            //real_server_.push_back(socket);
+            server.master_server_ = new Socket(ip.c_str(), port);
+
+            Json::Value slave_array = obj[(*iter)]["slave"];
+            for (int j = 0; j < slave_array.size(); j++) 
+            {
+                ip = slave_array[i]["ip"].asString();
+                port = slave_array[i]["port"].asInt(); 
+                server.slave_server_.push_back(new Socket(ip.c_str(), port));
+            }
+            
+            real_server_.push_back(server);
 
             Json::Value num_array = obj[(*iter)]["virtual_node"];
             for (int j = 0; j < num_array.size(); j++)
@@ -443,7 +374,8 @@ int Client::Impl::Init(const std::string &file_name)
                     return -2;
                 }
 
-                virtual_server_[num] = socket;
+                //virtual_server_[num] = socket;
+                virtual_server_[num] = server;
 
                 all_nums.push_back(num);
             }
@@ -477,14 +409,13 @@ int Client::Impl::Init(const std::string &file_name)
         before = *i;
     }
 
-    bool ret = Connect();
+    //去连接所有的 master_server
+    bool ret = ConnectMaster();
     if (ret == false) {
         free(buf);
         close(fd);
         return -1;
     }
-    
-    hash_ = true;
     
     close(fd);
     free(buf);
@@ -492,12 +423,14 @@ int Client::Impl::Init(const std::string &file_name)
     return 0;       
 }
 
-bool Client::Impl::Connect()
+bool Client::Impl::ConnectMaster()
 {
-    std::vector<Socket *>::iterator i;
+    std::vector<Server>::iterator i = real_server_.begin();
     int ret;
-    for (i = real_server_.begin(); i != real_server_.end(); i++) {
-        ret = (*i)->Connect();
+    Socket *s;
+    for (; i != real_server_.end(); i++) {
+        s = (*i).master_server_;
+        ret = s->Connect();
         if (ret == -1) {
             return false;
         }
@@ -507,14 +440,12 @@ bool Client::Impl::Connect()
 }
 
 
-Socket *Client::Impl::GetSocket(const std::string &key)
+Server Client::Impl::GetServer(const std::string &key)
 {
     int virtual_node =
         DJBHash((const unsigned char *)key.c_str(), key.size()) % virtual_server_.size();
 
-    Socket *s = virtual_server_[virtual_node];
-
-    return s;
+    return virtual_server_[virtual_node];
 }
 
 
@@ -529,6 +460,7 @@ unsigned int Client::Impl::DJBHash(const unsigned char *buf, int len)
     return hash;
 }                
 
+#if 0
 void Client::Impl::InitSlaveInfo(const std::string &slave_conf)
 {
     int fd = open(slave_conf.c_str(), O_RDONLY);
@@ -605,3 +537,4 @@ bool Client::Impl::ConnectSlave2()
     
     return true;
 }
+#endif 
