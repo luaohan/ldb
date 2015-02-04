@@ -44,6 +44,7 @@ static void SigChildHandler(int signo)
 
     pid = fork();
     if(pid == 0) { //child
+        log_info("new child server start\n");
         server.Run();
     }
 }
