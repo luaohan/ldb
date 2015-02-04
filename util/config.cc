@@ -59,7 +59,6 @@ int Config::LoadConfig(const std::string &file_name)
         Json::Value slave_array = master_server["slave"];
         for (int i = 0; i < slave_array.size(); i++)
         {
-
             Json::Value obj = slave_array[i];
             
             ConfigSlave slave;
@@ -67,6 +66,7 @@ int Config::LoadConfig(const std::string &file_name)
             slave.port_ = obj["port"].asInt();
             slaves_.push_back(slave);
         }
+
     } else {
         Json::Value slave_server = json_object["slave_server"];
         server_ip_ = slave_server["ip"].asString();

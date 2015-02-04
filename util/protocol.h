@@ -22,7 +22,7 @@
 #define PACKET_LEN_SLAVE_REPLAY (HEAD_LEN + (sizeof(short)))
 
 #define MAX_PACKET_LEN sizeof(int) + sizeof(short) + \
-    sizeof(int/*short*/) + MAX_KEY_LEN + MAX_VAL_LEN 
+    sizeof(int/*short*/) + ONE_M + 10
 
 
 

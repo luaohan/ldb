@@ -203,7 +203,9 @@ void Server::ConnectSlave()
         Slave *slave = *i;
         ret = slave->link_->Connect();
         if (ret == -1) { 
-            fprintf(stderr, "error connect %s:%d \n", slave->link_->ip(), slave->link_->port());
+            if ( !config_.daemon_ ) {
+                fprintf(stderr, "error connect %s:%d \n", slave->link_->ip(), slave->link_->port());
+            }
             //没有连接成功，加一个时间事件，1 S 发一次连接
             struct event *e = 
                 event_new(slave->server_->base_, -1, EV_PERSIST, Server::ConnectSlaveCB, slave);
@@ -285,7 +287,9 @@ void Server::ConnectSlaveCB(int fd, short what, void *arg)
 {
     Slave *slave = (Slave *)arg;
     int ret = slave->link_->Connect();
-    fprintf(stderr, "connect %s:%d \n", slave->link_->ip(), slave->link_->port());
+    if ( !slave->server_->config_.daemon_ ) {
+        fprintf(stderr, "try to connect %s:%d \n", slave->link_->ip(), slave->link_->port());
+    }
     if (ret == -1) { //没有连接成功，依然 1 S 发一次连接
         return ;
     }
