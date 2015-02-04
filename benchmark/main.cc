@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "error: %s, ret: %d\n", strerror(errno), ret);
         return -1;
     }
+    
+    printf("Init Server Ok\n");
 
     Test t(&cli);
     t.Run();

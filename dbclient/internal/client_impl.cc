@@ -1,7 +1,6 @@
 // client_impl.cc (2015-01-14)
 // Yan Gaofeng (yangaofeng@360.cn)
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -348,12 +347,12 @@ int Client::Impl::Init()
 
     std::list<int> all_nums;
 
-    Server *server = new Server;
     //Socket *socket = NULL;
-    
     Json::Value array = json_object["node_maps"];
     for (int i = 0; i < array.size(); i++)
     {
+        Server *server = new Server;
+       
         Json::Value obj = array[i];
         Json::Value::Members member = obj.getMemberNames(); 
         Json::Value::Members::iterator iter = member.begin();
@@ -387,11 +386,11 @@ int Client::Impl::Init()
                     return -2;
                 }
 
-                //virtual_server_[num] = socket;
                 virtual_server_[num] = server;
 
                 all_nums.push_back(num);
             }
+
         }
     }   
 

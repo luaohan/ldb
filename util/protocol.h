@@ -21,9 +21,11 @@
 #define HEAD_LEN (sizeof(int) + sizeof(short))
 #define PACKET_LEN_SLAVE_REPLAY (HEAD_LEN + (sizeof(short)))
 
-#define MAX_PACKET_LEN sizeof(int) + sizeof(short) + \
+//#define MAX_PACKET_LEN sizeof(int) + sizeof(short) + \
     sizeof(int/*short*/) + ONE_M + 10
 
+#define MAX_PACKET_LEN sizeof(int) + sizeof(short) + \
+    sizeof(int/*short*/) + ONE_M + MAX_KEY_LEN 
 
 
 //|packet_len | type |                       |    or
