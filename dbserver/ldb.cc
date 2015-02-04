@@ -2,11 +2,9 @@
 // WangPeng (1245268612@qq.com)
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include <dbserver/server.h>
 #include <dbserver/signal.h>
-#include <util/log.h>
 
 Server server;
 
@@ -31,7 +29,8 @@ int main(int argc, char **argv)
 
     pid_t pid;
     pid = fork();
-    if (pid == 0) { //child
+    if (pid == 0) { 
+        //child
         server.Run();
     } else if (pid < 0) {
         fprintf(stderr, "fork error\n");

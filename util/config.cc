@@ -77,5 +77,8 @@ int Config::LoadConfig(const std::string &file_name)
         level_ = slave_server["log_level"].asInt();
     }
 
+    free(buf);
+    close(fd);
+    
     return 0;       
 }

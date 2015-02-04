@@ -160,12 +160,6 @@ int Server::Init(const char *config_file)
         fprintf(stderr, "open logfile error: %s\n", strerror(errno));
         return -1; 
     }
-
-    if (config_.master_server_) {
-        ConnectSlave();
-    } else {
-        server_can_write_ = true;
-    }
     
     if ( config_.daemon_ ) {
         Daemon();
@@ -178,6 +172,13 @@ int Server::Init(const char *config_file)
 
 void Server::Run()
 {
+    if (config_.master_server_) {
+        server_can_write_ = false;
+        ConnectSlave();
+    } else {
+        server_can_write_ = true;
+    }
+    
     int ret = event_base_dispatch(base_);
     assert(ret == 0);
 
