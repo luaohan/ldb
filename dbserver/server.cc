@@ -108,7 +108,7 @@ Client *Server::FindClient(int fd)
     }
 }
 
-int Server::Run(const char *config_file)
+int Server::Init(const char *config_file)
 {
     std::string file = config_file;
 
@@ -117,32 +117,12 @@ int Server::Run(const char *config_file)
         fprintf(stderr, "configfile is wrong.\n");
         return -1;
     }
-
-    log = new Log(config_.log_file_, config_.level_, 0);
-    if (log == NULL) {
-        fprintf(stderr, "open logfile error: %s\n", strerror(errno));
-        return -1; 
-    }
-
+    
     options_.create_if_missing = true;
     leveldb::Status status 
         = leveldb::DB::Open(options_, config_.db_directory_.c_str(), &db_);
     assert(status.ok());
-    
-    ret = CreateServer();
-    if (ret < 0) {
-        return -1;
-    }
-
-    if (log != NULL) {
-        delete log;
-    }
-
-    return 0;
-}
-
-int Server::CreateServer()
-{
+   
     socket_ = new Acceptor;
     if (socket_ == NULL) {
         return -1;
@@ -174,22 +154,36 @@ int Server::CreateServer()
                 EV_READ | EV_PERSIST, Server::ListenCB, this);
     event_add(e, NULL);
     socket_->set_event(e);
+    
+    log = new Log(config_.log_file_, config_.level_, 0);
+    if (log == NULL) {
+        fprintf(stderr, "open logfile error: %s\n", strerror(errno));
+        return -1; 
+    }
 
     if (config_.master_server_) {
         ConnectSlave();
     } else {
         server_can_write_ = true;
     }
-
+    
     if ( config_.daemon_ ) {
         Daemon();
     }
-
+    
     //fprintf(stderr, "init server success\n");
-
-    event_base_dispatch(base_);
-
+    
     return 0;
+}
+
+void Server::Run()
+{
+    int ret = event_base_dispatch(base_);
+    assert(ret == 0);
+
+    if (log != NULL) {
+        delete log;
+    }
 }
 
 void Server::DeleteClient(Client *c)

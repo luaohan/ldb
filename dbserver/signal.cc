@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <event2/event.h>
 
 #include <dbserver/signal.h>
 #include <util/log.h>
@@ -15,37 +16,34 @@ void SigProcess()
 {
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
-    signal(SIGCHLD, SigChild);
+    signal(SIGCHLD, SigChildHandler);
 
     struct sigaction act;
 
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
-    act.sa_handler = SigtermHandler;
+    act.sa_handler = SigTermHandler;
     sigaction(SIGTERM, &act, NULL);
 }
 
-static void SigtermHandler(int sig)
+static void SigTermHandler(int sig)
 {
-    quit = true;
     log_info("server exit\n");
+
+    event_base_loopexit(server.base_, NULL);
 }
 
-static void SigChild(int signo)
+static void SigChildHandler(int signo)
 {
     pid_t pid;
     int stat;
 
     while((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
-        printf("child server exit\n");
         log_info("child server exit\n");
     }
 
     pid = fork();
     if(pid == 0) { //child
-        if (server.Run(arg) < 0) {
-            exit(0);
-        }
+        server.Run();
     }
-
 }

@@ -183,7 +183,8 @@ Status Client::Impl::Get(const std::string &key, std::string *val,
     const char *s_key = key.c_str();
     char buf[MAX_PACKET_LEN]; 
 
-    int len = FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
+    int len = 
+        FillPacket(buf, MAX_PACKET_LEN, s_key, key.size(), NULL, 0, GET_CMD);
     
     if (master_exit) {
         len += sizeof(short);

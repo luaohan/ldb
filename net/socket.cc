@@ -168,6 +168,9 @@ void Socket::SetNoNagle()
 
 int Socket::ReadData(char *buffer, int size)
 {
+    assert(buffer != NULL);
+    assert(size > 0);
+    assert(is_noblocked_);
 
 read_again:
     int read_size = read(fd_, buffer, size);
@@ -184,6 +187,9 @@ read_again:
 
 int Socket::WriteData(char *buffer, int size)
 {
+    assert(buffer != NULL);
+    assert(size > 0);
+    assert(is_noblocked_);
 
 write_again:
     int write_size = write(fd_, buffer, size);
@@ -200,30 +206,40 @@ write_again:
 
 int Socket::BlockRead(char *buffer, int size) 
 {
-   int nleft = size;
-   int nread;
+    assert(buffer != NULL);
+    assert(size > 0);
+    assert(!is_noblocked_);
 
-   while (nleft > 0) {
-       nread = read(fd_, buffer, nleft);
-       if (nread < 0) {
-           if (errno == EINTR) {
-               nread = 0;
-           } else {
-               return -1;
-           }
-       } else if (nread == 0) {
-           break;
-       }
+    int nleft = size;
+    int nread;
 
-       nleft -= nread;
-       buffer += nread;
-   }
-   
-   return size - nleft;
+    while (nleft > 0) {
+        nread = read(fd_, buffer, nleft);
+        if (nread < 0) {
+            if (errno == EINTR) {
+                //nread = 0;
+                continue;
+            } else {
+                return -1;
+            }
+        } else if (nread == 0) {
+            //break;
+            return 0;
+        }
+
+        nleft -= nread;
+        buffer += nread;
+    }
+    //return size - nleft;
+    return size;
 }
 
 int Socket::BlockWrite(char *buffer, int size) 
 {
+    assert(buffer != NULL);
+    assert(size > 0);
+    assert(!is_noblocked_);
+
     int nleft = size;
     int nwrite;
 
@@ -231,7 +247,8 @@ int Socket::BlockWrite(char *buffer, int size)
         nwrite = write(fd_, buffer, nleft);
         if (nwrite <= 0) {
             if (nwrite < 0 && errno == EINTR) {
-                nwrite = 0;
+                //nwrite = 0;
+                continue;
             } else {
                 return -1;
             }

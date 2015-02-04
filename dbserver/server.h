@@ -28,10 +28,10 @@ public:
     int Get(const leveldb::Slice& key, std::string* value);
     int Delete(const leveldb::Slice& key);
 
-    int Run(const char *config_file);
+    int Init(const char *config_file);
+    void Run();
     
     Client *FindClient(int fd);
-    void AddClient(Client *cli);
     
     static void ClientReadWriteCB(int fd, short what, void *arg);
     static void SlaveReadWriteCB(int fd, short what, void *arg);
@@ -39,10 +39,9 @@ public:
 private:
     void DeleteClient(Client *c);
     void DeleteClient(int fd);
+    void AddClient(Client *cli);
 
     void ConnectSlave();
-
-    int CreateServer();
 
     static void ListenCB(int fd, short what, void *arg);
     static void ClientReadCB(int fd, short what, void *arg);

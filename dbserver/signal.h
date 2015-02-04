@@ -6,12 +6,10 @@
 
 #include <dbserver/server.h>
 
-extern bool quit;
 extern Server server;
-extern char *arg;
 
 void SigProcess();
-static void SigtermHandler(int sig);
-static void SigChild(int signo);
+static void SigTermHandler(int sig);
+static void SigChildHandler(int signo);
 
 #endif

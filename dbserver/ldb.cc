@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <dbserver/server.h>
 #include <dbserver/signal.h>
-#include "server.h"
+#include <util/log.h>
 
 Server server;
-char *arg;
 
 void Usage(char **argv)
 {
@@ -23,20 +23,24 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    arg = argv[1];
     SigProcess();
+    
+    if (server.Init(argv[1]) < 0) {
+        return -1;
+    }
 
     pid_t pid;
     pid = fork();
-    if (pid == 0) {
-        if (server.Run(argv[1]) < 0) {
-            exit(0);
-        }
+    if (pid == 0) { //child
+        server.Run();
+    } else if (pid < 0) {
+        fprintf(stderr, "fork error\n");
+        return -1;
     }
-
+    
     //father
     while(1) {
-        sleep(10);
+        sleep(100);
     }
     
     return 0;
