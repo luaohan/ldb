@@ -20,8 +20,7 @@ int main(int argc, char *argv[])
 
     int ret = cli.Init();
     if (ret != 0) {
-        fprintf(stderr, "error: %s\n", strerror(errno));
-        printf("error: %d\n", ret);
+        fprintf(stderr, "error: %s, ret: %d\n", strerror(errno), ret);
         return -1;
     }
 

@@ -13,7 +13,7 @@ LDFLAGS := -L../../net \
 	-lldbnet \
 	-L../../util \
 	-lldbutil \
-	-Wl,-rpath=../util \
+	-Wl,-rpath=../../util \
 	-L../../../opensource/leveldb \
 	-lleveldb \
 	-Wl,-rpath=../../../opensource/leveldb \
@@ -22,7 +22,10 @@ LDFLAGS := -L../../net \
 	-Wl,-rpath=../../../opensource/jsoncpp \
 	-L../../dbclient \
 	-lldbclient \
-	-Wl,-rpath=../../dbclient
+	-Wl,-rpath=../../dbclient \
+	-L../../../opensource/libevent\
+	-levent\
+	-Wl,-rpath=../../../opensource/event
 
 
 $(TARGET): $(OBJ) 

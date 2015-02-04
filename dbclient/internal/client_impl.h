@@ -29,14 +29,14 @@ public:
 private:
     unsigned int DJBHash(const unsigned char *buf, int len);
     bool ConnectMaster();
-    Server GetServer(const std::string &key);
+    Server *GetServer(const std::string &key);
 
     Status Get(const std::string &key, std::string *value, 
             Socket *socket, bool master_exit);
 
 private:
-    std::vector<Server> real_server_;
-    std::vector<Server> virtual_server_;
+    std::vector<Server *> real_server_;
+    std::vector<Server *> virtual_server_;
     
     std::string config_file_;
 };

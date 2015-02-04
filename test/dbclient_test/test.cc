@@ -24,41 +24,32 @@ int main()
         return -1;
     }
 
-    int max_i = 100;
+    int max_i = 100000;
 
     char key[key_length];
     memset(key, 'k', key_length);
-    key[key_length] = '\0';
+    key[key_length - 1] = '\0';
 
     char val[val_length];
     memset(val, 'v', val_length);
-    val[val_length] = '\0';
+    val[val_length -1] = '\0';
 
     std::string true_key(key, key_length);
     std::string true_val(val, val_length);
 
+    Status s;
     s = cli.Set(true_key, true_val);
     assert(s.IsOk());
 
     std::string geted_val;
-    Status s;
-
-
-
     for(int i = 0; i < max_i; i++) {
-        sprintf(key, "%d", i);
-        key[key_length] = '\0';
-        std::string true_key(key, key_length);
-        cli.Set(true_key, true_val);
-        cli.Get(true_key, &getval);
-        if (strcmp(getval.c_str(), true_val.c_str()) != 0) {
-            printf("getval error\n");
+        s = cli.Get(true_key, &geted_val);
+        assert(s.IsOk());
+        if (geted_val != true_val) {
+            printf("|%s|, %d\n", true_val.c_str(), true_val.size());
+            printf(">>|%s|, %d\n", geted_val.c_str(), geted_val.size());
             return -1;
         }
-        
-        cli.Del(true_key);
-        s = cli.Get(true_key, &getval); 
-        assert(s.IsKeyNotExist());
     }
 
     return 0;

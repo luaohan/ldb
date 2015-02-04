@@ -24,17 +24,17 @@ Client::Impl::Impl(const std::string &config_file):
 
 Client::Impl::~Impl()
 {
-    std::vector<Server>::iterator i = real_server_.begin();
+    std::vector<Server *>::iterator i = real_server_.begin();
     std::vector<Socket *>::iterator j;
     for (; i != real_server_.end(); i++) {
-        if ((*i).master_server_ != NULL) {
-            delete (*i).master_server_;
+        if ((*i)->master_server_ != NULL) {
+            delete (*i)->master_server_;
         }
 
-        if (!(*i).slave_server_.empty()) 
+        if (!(*i)->slave_server_.empty()) 
         {
-            j = (*i).slave_server_.begin();
-            for (; j != (*i).slave_server_.end(); j++) {
+            j = (*i)->slave_server_.begin();
+            for (; j != (*i)->slave_server_.end(); j++) {
                 delete (*j);
             }
         }
@@ -45,8 +45,8 @@ Client::Impl::~Impl()
 
 Status Client::Impl::Set(const std::string &key, const std::string &val)
 {
-    Server s = GetServer(key);
-    Socket *socket = s.master_server_;
+    Server *s = GetServer(key);
+    Socket *socket = s->master_server_;
 
     const char *s_key = key.c_str();
     const char *s_val = val.c_str();
@@ -69,9 +69,11 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
 
         ret = socket->BlockRead(buf, HEAD_LEN);
         if (ret < 0) {
+            if (errno == 104) {
+                return Status::ServerExit();
+            }
             return Status::Unknown();
-        }
-        if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+        } else if (ret == 0) {
             return Status::ServerExit();
         }
 
@@ -106,12 +108,14 @@ Status Client::Impl::Set(const std::string &key, const std::string &val)
 
     ret = socket->BlockRead(buf, HEAD_LEN);
     if (ret < 0) {
+        if (errno == 104) {
+            return Status::ServerExit();
+        }
         return Status::Unknown();
-    }
-    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+    } else if (ret == 0) {
         return Status::ServerExit();
     }
-    
+
     short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
     if (packet_type == REPLAY_ERROR) {
         return Status::Unknown();
@@ -125,46 +129,46 @@ Status Client::Impl::Get(const std::string &key, std::string *val)
     Status status;
     bool master_exit;
     
-    Server server = GetServer(key);
+    Server *server = GetServer(key);
     Socket *socket;
     
 get_again:
-    if (server.master_server_ == NULL) { 
+    if (server->master_server_ == NULL) { 
         //表示 master_server 挂了
         //获取最后一个slave
-        socket = server.slave_server_.back();
+        socket = server->slave_server_.back();
         master_exit = true;
     } else {
 
-        socket = server.master_server_;
+        socket = server->master_server_;
         master_exit = false;
     }
 
     status = Get(key, val, socket, master_exit);
     if (status.IsServerExit()) 
     {
-        if (server.master_server_ == NULL) 
+        if (server->master_server_ == NULL) 
         {
-            delete server.slave_server_.back();
-            server.slave_server_.pop_back();
+            delete server->slave_server_.back();
+            server->slave_server_.pop_back();
         } else {
 
-            delete server.master_server_;
-            server.master_server_ = NULL;
+            delete server->master_server_;
+            server->master_server_ = NULL;
         }
 again:
-        if (server.slave_server_.empty()) {
+        if (server->slave_server_.empty()) {
             return Status::ServerExit();
         }
         
         //返回最后一个元素
-        socket = server.slave_server_.back();
+        socket = server->slave_server_.back();
         int ret = socket->Connect();
         if (ret == -1) {
             //有可能连接slave 失败
             //有几个slave 就有几次Get 的机会
-            delete server.slave_server_.back();
-            server.slave_server_.pop_back();
+            delete server->slave_server_.back();
+            server->slave_server_.pop_back();
             goto again;
         }
         
@@ -195,15 +199,17 @@ Status Client::Impl::Get(const std::string &key, std::string *val,
         if (errno == 104) {
             return Status::ServerExit();
         }
-    
+
         return Status::Unknown();
     }
     
     ret = socket->BlockRead(buf, HEAD_LEN); //读包头
     if (ret < 0) {
+        if (errno == 104) {
+            return Status::ServerExit();
+        }
         return Status::Unknown();
-    }
-    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+    } else if (ret == 0) {
         return Status::ServerExit(); //server exit
     }
 
@@ -219,9 +225,11 @@ Status Client::Impl::Get(const std::string &key, std::string *val,
 
         ret = socket->BlockRead(buf, body_len); //读包体
         if (ret < 0) {
+            if (errno == 104) {
+                return Status::ServerExit();
+            }
             return Status::Unknown();
-        }
-        if ((ret > 0 && ret < body_len)|| ret == 0) {
+        } else if (ret == 0) {
             return Status::ServerExit();
         }
 
@@ -242,9 +250,11 @@ Status Client::Impl::Get(const std::string &key, std::string *val,
     ret = socket->BlockRead(p, body_len); //读包体
     if (ret < 0) {
         free(p);
+        if (errno == 104) {
+            return Status::ServerExit();
+        }
         return Status::Unknown();
-    }
-    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+    } else if (ret == 0) {
         free(p);
         return Status::ServerExit(); //server exit
     }
@@ -262,8 +272,8 @@ Status Client::Impl::Get(const std::string &key, std::string *val,
 
 Status Client::Impl::Del(const std::string &key)
 {
-    Server s = GetServer(key);
-    Socket *socket = s.master_server_;
+    Server *s = GetServer(key);
+    Socket *socket = s->master_server_;
     
     const char *s_key = key.c_str();
 
@@ -280,12 +290,14 @@ Status Client::Impl::Del(const std::string &key)
 
     ret = socket->BlockRead(buf, HEAD_LEN);
     if (ret < 0) {
+        if (errno == 104) {
+            return Status::ServerExit();
+        }
         return Status::Unknown();
-    }
-    if ((ret > 0 && ret < HEAD_LEN) || ret == 0) {
+    } else if (ret == 0) {
         return Status::ServerExit(); //server exit
     }
-    
+
     short packet_type = ntohs(*((short *)&(buf[sizeof(int)])));
     if (packet_type == REPLAY_ERROR) {
         return Status::Unknown();
@@ -336,7 +348,7 @@ int Client::Impl::Init()
 
     std::list<int> all_nums;
 
-    Server server;
+    Server *server = new Server;
     //Socket *socket = NULL;
     
     Json::Value array = json_object["node_maps"];
@@ -353,14 +365,14 @@ int Client::Impl::Init()
 
             //socket = new Socket(ip.c_str(), port);
             //real_server_.push_back(socket);
-            server.master_server_ = new Socket(ip.c_str(), port);
+            server->master_server_ = new Socket(ip.c_str(), port);
 
             Json::Value slave_array = obj[(*iter)]["slave"];
             for (int j = 0; j < slave_array.size(); j++) 
             {
-                ip = slave_array[i]["ip"].asString();
-                port = slave_array[i]["port"].asInt(); 
-                server.slave_server_.push_back(new Socket(ip.c_str(), port));
+                ip = slave_array[j]["ip"].asString();
+                port = slave_array[j]["port"].asInt(); 
+                server->slave_server_.push_back(new Socket(ip.c_str(), port));
             }
             
             real_server_.push_back(server);
@@ -426,11 +438,11 @@ int Client::Impl::Init()
 
 bool Client::Impl::ConnectMaster()
 {
-    std::vector<Server>::iterator i = real_server_.begin();
+    std::vector<Server *>::iterator i = real_server_.begin();
     int ret;
     Socket *s;
     for (; i != real_server_.end(); i++) {
-        s = (*i).master_server_;
+        s = (*i)->master_server_;
         ret = s->Connect();
         if (ret == -1) {
             return false;
@@ -441,7 +453,7 @@ bool Client::Impl::ConnectMaster()
 }
 
 
-Server Client::Impl::GetServer(const std::string &key)
+Server *Client::Impl::GetServer(const std::string &key)
 {
     int virtual_node =
         DJBHash((const unsigned char *)key.c_str(), key.size()) % virtual_server_.size();
@@ -461,81 +473,3 @@ unsigned int Client::Impl::DJBHash(const unsigned char *buf, int len)
     return hash;
 }                
 
-#if 0
-void Client::Impl::InitSlaveInfo(const std::string &slave_conf)
-{
-    int fd = open(slave_conf.c_str(), O_RDONLY);
-    if (fd < 0) {
-        fprintf(stderr, "open slave conf error: %s\n", strerror(errno));
-        exit(0);
-    }
-    
-    int BUFSIZE = 1024 * 1024 * 1; //1M
-    char *buf = (char *)malloc(BUFSIZE);
-    if (buf == NULL) {
-        close(fd);
-        fprintf(stderr, "malloc error: %s\n", strerror(errno));
-        exit(0);
-    }
-    
-    int read_size = read(fd, buf, BUFSIZE);
-    if (read_size < 0) {
-        free(buf);
-        close(fd);
-        fprintf(stderr, "read error: %s\n", strerror(errno));
-        exit(0);
-    }
-
-    buf[read_size] = '\0';
-
-    Json::Reader reader;
-    Json::Value json_object;
-    if (!reader.parse(buf, json_object)) {
-        free(buf);
-        close(fd);
-        fprintf(stderr, "json file error\n");
-        exit(0);
-    }
-
-    slave_1_ip_ = json_object["slave_1_ip"].asString();
-    slave_2_ip_ = json_object["slave_2_ip"].asString();
-    
-    slave_1_port_ = json_object["slave_1_port"].asInt();
-    slave_2_port_ = json_object["slave_2_port"].asInt();
-    
-    close(fd);
-    free(buf);
-
-    return ;
-}
-
-bool Client::Impl::ConnectSlave1()
-{
-    socket_slave_1_ = new Socket();
-    assert(socket_slave_1_ != NULL);
-
-    if (socket_slave_1_->Connect(slave_1_ip_.c_str(), slave_1_port_) == -1) {
-        socket_slave_1_->Close();
-        delete socket_slave_1_;
-        socket_slave_1_ = NULL;
-        return false;
-    }
-
-    return true;
-}
-
-bool Client::Impl::ConnectSlave2()
-{
-    socket_slave_2_ = new Socket();
-    assert(socket_slave_2_ != NULL);
-
-    if (socket_slave_2_->Connect(slave_1_ip_.c_str(), slave_1_port_) == -1) {
-        socket_slave_2_->Close();
-        delete socket_slave_2_;
-        socket_slave_2_ = NULL;
-        return false;
-    }
-    
-    return true;
-}
-#endif 

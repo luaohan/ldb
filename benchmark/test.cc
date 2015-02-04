@@ -93,7 +93,6 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
     Status status;
     status = client_->Set(key, value);
     if (!status.IsOk()) {
-        printf("111\n");
         exit(0);
         cout << "set key: " << KEY(key) << " failed" << endl;
         return false;
@@ -105,13 +104,11 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
     std::string response;
     status = client_->Get(key, &response);
     if (!status.IsOk()) {
-        printf("222\n");
         exit(0);
         cout << "get key: " << KEY(key) << " failed" << endl;
         return false;
     }
     if (response != value) {
-        printf("333\n");
         exit(0);
         cout << "get key: " << KEY(key) 
             << " failed, invalid result: "
@@ -120,14 +117,12 @@ bool Test::Exec(std::string &key, std::string &value, bool only_set)
     }
     status = client_->Del(key);
     if (!status.IsOk()) {
-        printf("444\n");
         exit(0);
         cout << "del key: " << KEY(key) << " failed" << endl;
         return false;
     }
     status = client_->Get(key, &response);
     if (!status.IsKeyNotExist()) {
-        printf("555\n");
         exit(0);
         cout << "after del, get key: " 
             << KEY(key) << " should not success" << endl;

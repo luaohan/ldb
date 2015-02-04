@@ -214,6 +214,8 @@ void Server::ConnectSlave()
             continue;
         }
 
+        slave->link_->SetNonBlock();
+        
         //连接成功，添加读事件
         int fd = slave->link_->fd();
         struct event *e = event_new(slave->server_->base_, fd, EV_READ | EV_PERSIST,
@@ -286,7 +288,9 @@ void Server::ConnectSlaveCB(int fd, short what, void *arg)
     if (ret == -1) { //没有连接成功，依然 1 S 发一次连接
         return ;
     }
-
+    
+    slave->link_->SetNonBlock();
+    
     //连接成功，
     //移除时间事件
     event_free(slave->time_event());

@@ -109,7 +109,7 @@ int Client::ReadBody(/*Slave *slave*/)
         }
         
         int value_len = body_len_ - key_len - sizeof(short);
-        if (server_->config_.master_server_ == false) {
+        if (server_->config_.master_server_ == false) { 
             value_len -= sizeof(short);
             client_flag_ = ntohs(*((short *)&recv_[body_len_ - sizeof(short)]));
         }
@@ -251,6 +251,9 @@ int Client::SetCommand()
 
         leveldb::Slice key(key_, key_len_);
         int value_len = body_len_ - key_len_ - sizeof(short);
+        if (server_->config_.master_server_ == false) { 
+            value_len -= sizeof(short);
+        }
 
         if (big_value_ == NULL) {
 
