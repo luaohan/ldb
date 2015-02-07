@@ -10,12 +10,18 @@
 #include <iostream>
 #include <dbclient/client.h>
 #include "test.h"
+#include "benchmark.h"
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-    std::string conf_file("config.json");
+    if (argc != 2) {
+        printf("<%s> <configfile>\n", argv[0]);
+        return -1;
+    }
+    
+    std::string conf_file(argv[1]);
     Client cli(conf_file); 
 
     int ret = cli.Init();
@@ -26,8 +32,15 @@ int main(int argc, char *argv[])
     
     printf("Init Server Ok\n");
 
+#if 0
     Test t(&cli);
     t.Run();
+#endif
 
+#if 0
+    Benchmark bench(&cli);
+    bench.Run();
+#endif
+    
     return 0;
 }

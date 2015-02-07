@@ -26,6 +26,7 @@ Client::Impl::~Impl()
     std::vector<Server *>::iterator i = real_server_.begin();
     std::vector<Socket *>::iterator j;
     for (; i != real_server_.end(); i++) {
+
         if ((*i)->master_server_ != NULL) {
             delete (*i)->master_server_;
         }
@@ -37,6 +38,8 @@ Client::Impl::~Impl()
                 delete (*j);
             }
         }
+
+        delete (*i);
     }
 }
 
@@ -346,12 +349,13 @@ int Client::Impl::Init()
     virtual_server_.resize(node_num);
 
     std::list<int> all_nums;
+    
+    Server *server = NULL;
 
-    //Socket *socket = NULL;
     Json::Value array = json_object["node_maps"];
     for (int i = 0; i < array.size(); i++)
     {
-        Server *server = new Server;
+        server = new Server;
        
         Json::Value obj = array[i];
         Json::Value::Members member = obj.getMemberNames(); 
@@ -362,8 +366,6 @@ int Client::Impl::Init()
             std::string ip = obj[(*iter)]["ip"].asString();
             int port = obj[(*iter)]["port"].asInt();
 
-            //socket = new Socket(ip.c_str(), port);
-            //real_server_.push_back(socket);
             server->master_server_ = new Socket(ip.c_str(), port);
 
             Json::Value slave_array = obj[(*iter)]["slave"];

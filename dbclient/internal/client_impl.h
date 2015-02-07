@@ -6,8 +6,8 @@
 #include <net/socket.h>
 
 struct Server {
-    Socket *master_server_; //当master_server 挂掉后，其为 NULL
-    std::vector<Socket *> slave_server_;
+        Socket *master_server_; //当master_server 挂掉后，其为 NULL
+        std::vector<Socket *> slave_server_;
 };
 
 class Client::Impl {

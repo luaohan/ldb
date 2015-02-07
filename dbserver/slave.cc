@@ -43,6 +43,10 @@ int Slave::Read()
     //这里假设slave 只会成功，所以只解析cli_fd
     short cli_fd = ntohs(*((short *)&(recv_[HEAD_LEN])));  
     Client *cli = server_->FindClient(cli_fd);
+    if (cli == NULL) {
+        return 0;
+    }
+    
     if (cli->done_ == false) {
         cli->ProcessCmd();
     }

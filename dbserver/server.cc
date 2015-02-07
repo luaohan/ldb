@@ -106,6 +106,8 @@ Client *Server::FindClient(int fd)
             return (*i);
         }
     }
+
+    return NULL;
 }
 
 int Server::Init(const char *config_file)
@@ -118,21 +120,37 @@ int Server::Init(const char *config_file)
         return -1;
     }
     
+    
+    log = new Log(config_.log_file_, config_.level_, 0);
+    if (log == NULL) {
+        fprintf(stderr, "open logfile error: %s\n", strerror(errno));
+        return -1; 
+    }
+    
+    if ( config_.daemon_ ) {
+        Daemon();
+    }
+    
+    //fprintf(stderr, "init server success\n");
+    
+    return 0;
+}
+
+void Server::Run()
+{
     options_.create_if_missing = true;
     leveldb::Status status 
         = leveldb::DB::Open(options_, config_.db_directory_.c_str(), &db_);
     assert(status.ok());
    
     socket_ = new Acceptor;
-    if (socket_ == NULL) {
-        return -1;
-    }
+    assert(socket_ != NULL);
     
     int backlog = 512;
     socket_->SetReuseAddr();
     if (socket_->Listen(config_.server_ip_.c_str(), config_.server_port_, backlog) < 0) {
         fprintf(stderr, "%s\n", strerror(errno));
-        return -1;
+        return ;
     }
     socket_->SetNonBlock();
      
@@ -155,23 +173,6 @@ int Server::Init(const char *config_file)
     event_add(e, NULL);
     socket_->set_event(e);
     
-    log = new Log(config_.log_file_, config_.level_, 0);
-    if (log == NULL) {
-        fprintf(stderr, "open logfile error: %s\n", strerror(errno));
-        return -1; 
-    }
-    
-    if ( config_.daemon_ ) {
-        Daemon();
-    }
-    
-    //fprintf(stderr, "init server success\n");
-    
-    return 0;
-}
-
-void Server::Run()
-{
     if (config_.master_server_) {
         server_can_write_ = false;
         ConnectSlave();
@@ -185,6 +186,8 @@ void Server::Run()
     if (log != NULL) {
         delete log;
     }
+
+    log_info("delete log\n");
 }
 
 void Server::DeleteClient(Client *c)
@@ -267,6 +270,7 @@ void Server::ClientReadCB(int fd, short what, void *arg)
     int rc = cli->Read();
     if (rc == -1) {
         cli->server_->DeleteClient(cli);//close the client
+        log_info("delete cli\n");
     }
 }
 

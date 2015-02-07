@@ -5,6 +5,7 @@
 
 #include <dbserver/server.h>
 #include <dbserver/signal.h>
+#include <util/log.h>
 
 Server server;
 
@@ -31,7 +32,9 @@ int main(int argc, char **argv)
     pid = fork();
     if (pid == 0) { 
         //child
+        log_info("child id: %d\n", getpid());
         server.Run();
+
     } else if (pid < 0) {
         fprintf(stderr, "fork error\n");
         return -1;

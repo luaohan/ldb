@@ -8,8 +8,8 @@
 #include <iostream>
 #include <sstream>
 #include <dbclient/client.h>
-#include "test.h"
 #include <dbclient/status.h>
+#include "test.h"
 
 using namespace std;
 
@@ -174,28 +174,8 @@ bool Test::Run()
     //batch test
     //ASSERT_TRUE(Batch(10000, 1*1024/256, 10*1024/256));
     //ASSERT_TRUE(Batch(1000000, 1*1024/256, 10*1024/256));
-    cout << "功能测试完毕，以下是性能测试" << endl;
-
-    char key_1[1024];
-    memset(key_1, '1', 1023);
-    key_1[1024] = '\0';
-
-    char val[1024];
-    memset(val, '1', 1023);
-    val[1024] = '\0';
-
-    std::string true_key(key_1, 1024);
-    std::string true_val(val, 1024);
-
-    int max_i = 10000;
-    int t1 = time(NULL);
-    for (int i = 0; i < max_i; i++) {
-        client_->Set(true_key, true_val); 
-    }   
-    int t = time(NULL) - t1; 
-    std::cout << max_i << " 条数据, key_len:1K, val_len:1K, ";
-    std::cout << "alltime: " << t << " S, "<< max_i / t << " 条数据/S" << std::endl;
 #endif
+    
     cout << "Run Ok" << endl;
 
     return true;

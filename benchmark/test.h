@@ -1,6 +1,9 @@
 // test.h (2015-01-09)
 // Yan Gaofeng (yangaofeng@360.cn)
 
+#ifndef _TEST_H_
+#define _TEST_H_
+
 class Client;
 
 class Test {
@@ -29,3 +32,4 @@ private:
     unsigned char bin_[256];
 };
 
+#endif

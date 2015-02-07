@@ -39,12 +39,12 @@ static void SigChildHandler(int signo)
     int stat;
 
     while((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
-        log_info("child server exit\n");
+        log_info("child server: %d exit \n", pid);
     }
 
     pid = fork();
     if(pid == 0) { //child
-        log_info("new child server start\n");
+        log_info("new child: %d server start\n", getpid());
         server.Run();
     }
 }
