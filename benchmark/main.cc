@@ -37,10 +37,8 @@ int main(int argc, char *argv[])
     t.Run();
 #endif
 
-#if 0
     Benchmark bench(&cli);
     bench.Run();
-#endif
     
     return 0;
 }

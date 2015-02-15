@@ -5,11 +5,14 @@
 #define _SIGNAL_H_
 
 #include <dbserver/server.h>
+#include <util/log.h>
 
-extern Server server;
+extern Server *server;
+extern pid_t father_id;
 
 void SigProcess();
 static void SigTermHandler(int sig);
 static void SigChildHandler(int signo);
+
 
 #endif

@@ -367,13 +367,16 @@ int Client::Impl::Init()
             int port = obj[(*iter)]["port"].asInt();
 
             server->master_server_ = new Socket(ip.c_str(), port);
+            server->master_server_->SetNoNagle();
 
             Json::Value slave_array = obj[(*iter)]["slave"];
             for (int j = 0; j < slave_array.size(); j++) 
             {
                 ip = slave_array[j]["ip"].asString();
                 port = slave_array[j]["port"].asInt(); 
-                server->slave_server_.push_back(new Socket(ip.c_str(), port));
+                Socket *socket = new Socket(ip.c_str(), port);
+                socket->SetNoNagle();
+                server->slave_server_.push_back(socket);
             }
             
             real_server_.push_back(server);

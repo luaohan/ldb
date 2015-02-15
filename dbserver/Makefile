@@ -3,7 +3,7 @@ OBJ=$(SRC:%.cc=%.o)
 TARGET:=dbserver
 
 
-CXXFLAGS := -g -O0 -I../../opensource/leveldb/include -I../
+CXXFLAGS := -g -O2 -I../../opensource/leveldb/include -I../
 
 LDFLAGS := -L../net -Wl,-rpath=../net -lldbnet \
 	-L../util -Wl,-rpath=../util -lldbutil \

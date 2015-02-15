@@ -3,7 +3,7 @@ OBJ=$(SRC:%.cc=%.o)
 TARGET:=libldbclient.so
 
 
-CXXFLAGS := -g -O0 -fPIC \
+CXXFLAGS := -g -O2 -fPIC \
 	-I./ \
 	-I../ \
 	-I../../opensource/jsoncpp/include

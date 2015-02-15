@@ -1,4 +1,4 @@
-// ldb_server.cc (2014-12-23)
+// server.cc (2014-12-23)
 // WangPeng (1245268612@qq.com)
 
 #include <stdio.h>
@@ -26,9 +26,8 @@ bool quit = false;
 
 Server::Server():
     socket_(NULL), base_(NULL), 
-    signal_event_(NULL), 
     server_can_write_(false),
-    no_conn_slave_nums(0)
+    no_conn_slave_nums_(0)
 {
 
 }
@@ -38,9 +37,10 @@ Server::~Server()
     if (socket_ != NULL) {
         delete socket_;
     }
-    
-    if (signal_event_ != NULL) {
-        event_free(signal_event_);
+
+    std::vector<Slave *>::iterator i = slaves_.begin();
+    for (; i != slaves_.end(); i++) {
+        delete (*i);
     }
 
     if (base_ != NULL) {
@@ -56,8 +56,10 @@ int Server::Insert(const leveldb::Slice& key, const leveldb::Slice& value)
     status = db_->Put(write_options_, key, value);
     if (status.ok())
         return 0;
-    else 
+    else { 
+        log_error("insert error: %s\n", status.ToString().c_str());
         return -1; //一般不会发生
+    }
 }
 
 int Server::Get(const leveldb::Slice& key, std::string* value)
@@ -76,8 +78,10 @@ int Server::Delete(const leveldb::Slice& key)
     status = db_->Delete(write_options_, key);
     if (status.ok())
         return 0;
-    else 
+    else { 
+        log_error("delete error: %s\n", status.ToString().c_str());
         return -1; //一般不会发生
+    }
 }
 
 void Server::AddClient(Client *cli)
@@ -113,13 +117,11 @@ Client *Server::FindClient(int fd)
 int Server::Init(const char *config_file)
 {
     std::string file = config_file;
-
     int ret = config_.LoadConfig(file);
     if (ret != 0) {
         fprintf(stderr, "configfile is wrong.\n");
         return -1;
     }
-    
     
     log = new Log(config_.log_file_, config_.level_, 0);
     if (log == NULL) {
@@ -127,22 +129,14 @@ int Server::Init(const char *config_file)
         return -1; 
     }
     
-    if ( config_.daemon_ ) {
-        Daemon();
-    }
-    
-    //fprintf(stderr, "init server success\n");
-    
-    return 0;
-}
-
-void Server::Run()
-{
     options_.create_if_missing = true;
     leveldb::Status status 
         = leveldb::DB::Open(options_, config_.db_directory_.c_str(), &db_);
-    assert(status.ok());
-   
+    if (!status.ok()) {
+        fprintf(stderr, "open db error: %s\n", status.ToString().c_str());
+        return -1;
+    }
+    
     socket_ = new Acceptor;
     assert(socket_ != NULL);
     
@@ -150,18 +144,28 @@ void Server::Run()
     socket_->SetReuseAddr();
     if (socket_->Listen(config_.server_ip_.c_str(), config_.server_port_, backlog) < 0) {
         fprintf(stderr, "%s\n", strerror(errno));
-        return ;
+        return -1;
     }
     socket_->SetNonBlock();
-     
-    if (config_.master_server_) {
+    
+    if ( config_.daemon_ ) {
+        Daemon();
+    }
+    
+    //fprintf(stderr, "init server success\n");
+    return 0;
+}
+
+void Server::Run()
+{
+    if (config_.master_server_) 
+    {
         std::vector<ConfigSlave> slaves = config_.slaves_;
         std::vector<ConfigSlave>::iterator i = slaves.begin();
         for (; i != slaves.end(); i++) {
             std::string ip = (*i).ip_;
             int port = (*i).port_;
             Socket *socket = new Socket(ip.c_str(), port);
-            //socket->SetNonBlock();
             Slave *slave = new Slave(socket, this);
             slaves_.push_back(slave);
         }
@@ -180,14 +184,7 @@ void Server::Run()
         server_can_write_ = true;
     }
     
-    int ret = event_base_dispatch(base_);
-    assert(ret == 0);
-
-    if (log != NULL) {
-        delete log;
-    }
-
-    log_info("delete log\n");
+    event_base_dispatch(base_);
 }
 
 void Server::DeleteClient(Client *c)
@@ -212,14 +209,16 @@ void Server::ConnectSlave()
             //没有连接成功，加一个时间事件，1 S 发一次连接
             struct event *e = 
                 event_new(slave->server_->base_, -1, EV_PERSIST, Server::ConnectSlaveCB, slave);
-            struct timeval t = {2, 0};
+            struct timeval t = {3, 0};
             event_add(e, &t);
             slave->set_time_event(e);
     
-            slave->server_->no_conn_slave_nums++;
+            slave->server_->no_conn_slave_nums_++;
+            
             continue;
         }
 
+        slave->link_->SetNoNagle();
         slave->link_->SetNonBlock();
         
         //连接成功，添加读事件
@@ -231,7 +230,7 @@ void Server::ConnectSlave()
     }
     
     i = slaves_.begin();
-    if ((*i)->server_->no_conn_slave_nums == 0) {
+    if ((*i)->server_->no_conn_slave_nums_ == 0) {
         (*i)->server_->server_can_write_ = true;
     }
 
@@ -246,7 +245,8 @@ void Server::ListenCB(int fd, short what, void *arg)
         log_error("Accept error:[%s]", strerror(errno));
         return ;
     }
-
+    
+    link->SetNoNagle();
     link->SetNonBlock();
     
     Client *cli = new Client(server, link, server->slaves_);
@@ -298,6 +298,7 @@ void Server::ConnectSlaveCB(int fd, short what, void *arg)
         return ;
     }
     
+    slave->link_->SetNoNagle();
     slave->link_->SetNonBlock();
     
     //连接成功，
@@ -311,9 +312,9 @@ void Server::ConnectSlaveCB(int fd, short what, void *arg)
     event_add(e, NULL);
     slave->link_->set_event(e);
 
-    slave->server_->no_conn_slave_nums--;
+    slave->server_->no_conn_slave_nums_--;
 
-    if (slave->server_->no_conn_slave_nums == 0) {
+    if (slave->server_->no_conn_slave_nums_ == 0) {
         slave->server_->server_can_write_ = true;
     }
 }

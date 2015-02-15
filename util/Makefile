@@ -3,9 +3,7 @@ OBJ=$(SRC:%.cc=%.o)
 TARGET:=libldbutil.so
 
 
-CXXFLAGS := -g -O0 -fPIC
-
-CXXFLAGS := -g -O0 -fPIC\
+CXXFLAGS := -g -O2 -fPIC\
 	-I../../opensource/jsoncpp/include \
 	-I../../
 

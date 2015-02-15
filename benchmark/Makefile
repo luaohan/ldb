@@ -3,7 +3,7 @@ OBJ=$(SRC:%.cc=%.o)
 TARGET:=bench
 
 
-CXXFLAGS := -g -O0 \
+CXXFLAGS := -g -O2 \
 	-I../../opensource/leveldb/include \
 	-I../../opensource/jsoncpp/include \
 	-I../

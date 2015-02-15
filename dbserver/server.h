@@ -1,4 +1,4 @@
-// ldb_server.h (2014-12-23)
+// server.h (2014-12-23)
 // WangPeng (1245268612@qq.com)
 
 #ifndef _LDB_SERVER_H_
@@ -56,11 +56,10 @@ private:
     
     std::vector<Client *> clients_;
 
-    int no_conn_slave_nums;
+    int no_conn_slave_nums_;
     
 public:
     struct event_base *base_;
-    struct event *signal_event_;
 
     Acceptor *socket_;
     std::vector<Slave *> slaves_;
