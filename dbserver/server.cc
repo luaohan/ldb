@@ -331,6 +331,7 @@ void Server::ClientReadWriteCB(int fd, short what, void *arg)
         int rc = cli->Write();
         if (rc == -1) {
             cli->server_->DeleteClient(cli);//close the client
+            log_info("delete cli\n");
         } else if (rc == 2) {
             return ;
         }

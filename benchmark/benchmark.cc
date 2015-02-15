@@ -19,9 +19,9 @@ Benchmark::Benchmark(Client *client):
 void Benchmark::Run()
 {
     //      1K    1K
-    //Test(1024, 1024, 10000);
+    Test(1024, 1024, 10000);
     //      1K    40K 
-    Test(1024, 1024 * 40, 1000);
+    //Test(1024, 1024 * 40, 1000);
     //      1K    400K 
     //Test(1024, 1024 * 400, 100);
 }
@@ -31,10 +31,10 @@ void Benchmark::Test(int key_len, int val_len, int n)
     assert(key_len <= MAX_KEY_LEN && key_len >= 5);
     assert(val_len <= MAX_VAL_LEN && val_len >= 5);
 
-    long long set_time = 0; //ms
-    long long get_time = 0; //ms
-    long long del_time = 0; //ms
-    long long time_pos = 0; //ms
+    long long set_time = 0; //us
+    long long get_time = 0; //us
+    long long del_time = 0; //us
+    long long time_pos = 0; //us
 
     struct timeval t1;
     struct timeval t2;
@@ -60,8 +60,10 @@ void Benchmark::Test(int key_len, int val_len, int n)
         gettimeofday(&t2, NULL);
         assert(s.IsOk());
         time_pos = (t2.tv_sec - t1.tv_sec) * 1000000 + (t2.tv_usec - t1.tv_usec);
-        set_time += time_pos;
-        if (time_pos > 1000)
+
+        //if (time_pos < 1000000) 
+            set_time += time_pos;
+        //if (time_pos > 1000) 
             printf("%d, set_time: %d\t", i, time_pos);
 #if 0
         std::string get_val;

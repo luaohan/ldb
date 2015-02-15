@@ -56,6 +56,7 @@ int Slave::Read()
 
 int Slave::Write()
 {
+    writing_ = true;
     std::vector<Client *>::iterator it = clients_.begin();
     Client *cli = (*it);
 
@@ -159,6 +160,7 @@ int Slave::Write()
     data_one_ = false;
     data_two_ = false;
     flag_ = false;
+    writing_ = false;
 
     clients_.erase(it);
     

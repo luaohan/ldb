@@ -35,6 +35,14 @@ public:
         if (link_ != NULL) {
             delete link_;
         }
+
+        if (big_recv_ != NULL) {
+            delete big_recv_;
+        }
+        
+        if (big_value_ != NULL) {
+            delete big_value_;
+        }
     }
 
     int fd() const {

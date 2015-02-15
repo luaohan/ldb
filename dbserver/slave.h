@@ -22,6 +22,7 @@ class Slave {
             data_one_(false),
             data_two_(false),
             flag_(false),
+            writing_(false),
             time_event_(NULL)
             {}
 
@@ -44,6 +45,7 @@ class Slave {
         std::vector<Client *> clients_;
         Socket *link_;
         Server *server_;
+        bool writing_;
 
         struct event* time_event() const;
         void set_time_event(struct event *e);
