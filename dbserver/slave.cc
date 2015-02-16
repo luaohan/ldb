@@ -183,3 +183,10 @@ void Slave::set_time_event(struct event *e)
 {
     time_event_ = e;
 }
+
+#if 0
+void Slave::ConnectSlave()
+{
+
+}
+#endif

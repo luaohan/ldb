@@ -9,6 +9,7 @@
 
 extern Server *server;
 extern pid_t father_id;
+extern Config config; 
 
 void ChildSigProcess();
 void FatherSigProcess();

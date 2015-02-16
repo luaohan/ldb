@@ -13,6 +13,7 @@
 #include <util/daemon.h>
 
 pid_t father_id;
+Config config;
 Server *server;
 
 void Usage(char **argv)
@@ -29,9 +30,8 @@ int main(int argc, char **argv)
     }
 
     father_id = getpid();
-   
+
     std::string file = argv[1];
-    Config config;
     int ret = config.LoadConfig(file);
     if (ret != 0) {
         fprintf(stderr, "configfile is wrong.\n");
@@ -50,6 +50,7 @@ int main(int argc, char **argv)
         ChildSigProcess();
     
         log_info("child id: %d\n", getpid());
+
         server = new Server(config);
         if (server->Run() < 0) {
             kill(father_id, SIGINT);

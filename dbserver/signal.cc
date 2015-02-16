@@ -71,6 +71,8 @@ static void SigChildHandler(int signo)
     pid = fork();
     if(pid == 0) { //child
         log_info("new child: %d server start\n", getpid());
+        ChildSigProcess();
+        server = new Server(config);
         server->Run();
     }
 }
