@@ -65,6 +65,9 @@ void Benchmark::Test(int key_len, int val_len, int n)
             set_time += time_pos;
         //if (time_pos > 1000) 
             printf("%d, set_time: %d\t", i, time_pos);
+            if (i % 7 == 0) {
+                printf("\n");
+            }
 #if 0
         std::string get_val;
         gettimeofday(&t1, NULL);

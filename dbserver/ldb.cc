@@ -2,14 +2,18 @@
 // WangPeng (1245268612@qq.com)
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
+#include <signal.h>
 
 #include <dbserver/server.h>
 #include <dbserver/signal.h>
 #include <util/log.h>
+#include <util/config.h>
+#include <util/daemon.h>
 
-Server *server;
 pid_t father_id;
+Server *server;
 
 void Usage(char **argv)
 {
@@ -25,31 +29,42 @@ int main(int argc, char **argv)
     }
 
     SigProcess();
-    
     father_id = getpid();
-
-    server = new Server;
-    assert(server != NULL);
-
-    if (server->Init(argv[1]) < 0) {
+   
+    std::string file = argv[1];
+    Config config;
+    int ret = config.LoadConfig(file);
+    if (ret != 0) {
+        fprintf(stderr, "configfile is wrong.\n");
         return -1;
+    }
+    
+    if (config.daemon_) {
+        Daemon();
     }
 
     pid_t pid;
     pid = fork();
     if (pid == 0) { 
         //child
+    
         log_info("child id: %d\n", getpid());
-        server->Run();
+        server = new Server(config);
+        if (server->Run() < 0) {
+            kill(father_id, SIGINT);
+            sleep(1); //确保父进程已近退出
+            exit(1);
+        }
+
     } else if (pid < 0) {
         fprintf(stderr, "fork error\n");
         return -1;
     }
-    
+
     //father
     while(1) {
         sleep(100);
     }
-    
+
     return 0;
 }            

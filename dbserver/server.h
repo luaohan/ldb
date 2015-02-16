@@ -21,15 +21,15 @@ class Slave;
 
 class Server {
 public:
-    Server();
+    Server(Config &config);
     ~Server();
 
     int Insert(const leveldb::Slice& key, const leveldb::Slice& value);
     int Get(const leveldb::Slice& key, std::string* value);
     int Delete(const leveldb::Slice& key);
 
-    int Init(const char *config_file);
-    void Run();
+    int Run();
+    void Stop();
     
     Client *FindClient(int fd);
     

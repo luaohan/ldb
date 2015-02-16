@@ -33,7 +33,7 @@ static void SigTermHandler(int sig)
     
     if (getpid() != father_id) {
         //child
-        event_base_loopexit(server->base_, NULL);
+        server->Stop();
         delete server;
         delete log;
         sleep(1);  //让父进程先退
@@ -41,8 +41,18 @@ static void SigTermHandler(int sig)
 
     } else {
         //father
-        delete server;
-        delete log;
+        if (server == NULL) {
+            printf("server == NULL\n");
+        } else {
+            printf("server != NULL\n");
+        }
+        
+        if (log == NULL) {
+            printf("log == NULL\n");
+        } else {
+            printf("log != NULL\n");
+        }
+        
         exit(0);
     }
 }

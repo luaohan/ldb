@@ -29,6 +29,7 @@ public:
         cmd_(-1),
         first_to_slave_(false),
         done_(false),
+        i(0),
         client_flag_(-1){}
 
     ~Client() { 
@@ -116,6 +117,7 @@ private:
     
     bool first_to_slave_;
 
+    int i;
 };
 
 

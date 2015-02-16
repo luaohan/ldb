@@ -14,7 +14,7 @@
 #include <time.h>
 
 #include <net/acceptor.h>
-#include <util/daemon.h>
+//#include <util/daemon.h>
 #include <util/log.h>
 
 #include <dbserver/server.h>
@@ -24,9 +24,10 @@
 
 bool quit = false;
 
-Server::Server():
+Server::Server(Config &config):
     socket_(NULL), base_(NULL), 
     server_can_write_(false),
+    config_(config),
     no_conn_slave_nums_(0)
 {
 
@@ -114,15 +115,8 @@ Client *Server::FindClient(int fd)
     return NULL;
 }
 
-int Server::Init(const char *config_file)
+int Server::Run()
 {
-    std::string file = config_file;
-    int ret = config_.LoadConfig(file);
-    if (ret != 0) {
-        fprintf(stderr, "configfile is wrong.\n");
-        return -1;
-    }
-    
     log = new Log(config_.log_file_, config_.level_, 0);
     if (log == NULL) {
         fprintf(stderr, "open logfile error: %s\n", strerror(errno));
@@ -138,7 +132,10 @@ int Server::Init(const char *config_file)
     }
     
     socket_ = new Acceptor;
-    assert(socket_ != NULL);
+    if (socket_ == NULL) {
+        fprintf(stderr, "new Acceptor error\n");
+        return -1;
+    }
     
     int backlog = 512;
     socket_->SetReuseAddr();
@@ -148,16 +145,6 @@ int Server::Init(const char *config_file)
     }
     socket_->SetNonBlock();
     
-    if ( config_.daemon_ ) {
-        Daemon();
-    }
-    
-    //fprintf(stderr, "init server success\n");
-    return 0;
-}
-
-void Server::Run()
-{
     if (config_.master_server_) 
     {
         std::vector<ConfigSlave> slaves = config_.slaves_;
@@ -185,6 +172,13 @@ void Server::Run()
     }
     
     event_base_dispatch(base_);
+
+    return 0;
+}
+
+void Server::Stop()
+{
+    event_base_loopexit(base_, NULL);
 }
 
 void Server::DeleteClient(Client *c)
