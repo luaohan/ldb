@@ -12,7 +12,21 @@
 #include <dbserver/signal.h>
 #include <util/log.h>
 
-void SigProcess()
+void ChildSigProcess()
+{
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, SigTermHandler);
+
+    struct sigaction act;
+
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    act.sa_handler = SigTermHandler;
+    sigaction(SIGTERM, &act, NULL);
+}
+
+void FatherSigProcess()
 {
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
@@ -41,18 +55,6 @@ static void SigTermHandler(int sig)
 
     } else {
         //father
-        if (server == NULL) {
-            printf("server == NULL\n");
-        } else {
-            printf("server != NULL\n");
-        }
-        
-        if (log == NULL) {
-            printf("log == NULL\n");
-        } else {
-            printf("log != NULL\n");
-        }
-        
         exit(0);
     }
 }

@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/time.h>
 
 #include <leveldb/slice.h>
 
@@ -256,28 +255,15 @@ int Client::SetCommand()
             value_len -= sizeof(short);
         }
 
-        struct timeval t1;
-        struct timeval t2;
-        long long time_pos = 0; //us
-
         if (big_value_ == NULL) {
 
             leveldb::Slice val(val_, value_len);
-            gettimeofday(&t1, NULL);
             ret = server_->Insert(key, val);
-            gettimeofday(&t2, NULL);
-            time_pos = (t2.tv_sec - t1.tv_sec) * 1000000 + (t2.tv_usec - t1.tv_usec); 
-            printf("%d, set_time: %d\t", i++, time_pos);
-            if (i % 7 == 0) {
-                printf("\n");
-            }
-            
             if (ret == -1) {
                 //fatal error
                 log_fatal("insert error");
                 return -1;
-            }  
-
+            }   
         } else {
             leveldb::Slice val(big_value_, value_len);
             ret = server_->Insert(key, val);

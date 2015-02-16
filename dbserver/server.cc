@@ -263,9 +263,27 @@ void Server::ClientReadCB(int fd, short what, void *arg)
     Client *cli = (Client *)arg;
     int rc = cli->Read();
     if (rc == -1) {
-        cli->server_->DeleteClient(cli);//close the client
         log_info("delete cli\n");
+        
+        if(cli->server_->SlaveIsWrinting()) {
+            cli->exit_ = true;  //不要立即删除cli
+            return ;
+        }
+        
+        cli->server_->DeleteClient(cli);//close the client
     }
+}
+
+bool Server::SlaveIsWrinting()
+{
+    std::vector<Slave *>::iterator i = slaves_.begin();
+    for (; i != slaves_.end(); i++) {
+        if ((*i)->writing_) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void Server::SlaveReadCB(int fd, short what, void *arg)
@@ -324,8 +342,15 @@ void Server::ClientReadWriteCB(int fd, short what, void *arg)
         Client *cli = (Client *)arg;
         int rc = cli->Write();
         if (rc == -1) {
-            cli->server_->DeleteClient(cli);//close the client
             log_info("delete cli\n");
+            
+            if(cli->server_->SlaveIsWrinting()) {
+                cli->exit_ = true;  //不要立即删除cli
+                return ;
+            }
+            
+            cli->server_->DeleteClient(cli);//close the client
+            return ;
         } else if (rc == 2) {
             return ;
         }

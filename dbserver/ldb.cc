@@ -28,7 +28,6 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    SigProcess();
     father_id = getpid();
    
     std::string file = argv[1];
@@ -47,6 +46,8 @@ int main(int argc, char **argv)
     pid = fork();
     if (pid == 0) { 
         //child
+        
+        ChildSigProcess();
     
         log_info("child id: %d\n", getpid());
         server = new Server(config);
@@ -62,6 +63,7 @@ int main(int argc, char **argv)
     }
 
     //father
+    FatherSigProcess();
     while(1) {
         sleep(100);
     }

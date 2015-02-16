@@ -10,7 +10,8 @@
 extern Server *server;
 extern pid_t father_id;
 
-void SigProcess();
+void ChildSigProcess();
+void FatherSigProcess();
 static void SigTermHandler(int sig);
 static void SigChildHandler(int signo);
 

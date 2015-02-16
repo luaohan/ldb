@@ -46,7 +46,14 @@ int Slave::Read()
     if (cli == NULL) {
         return 0;
     }
-    
+
+    /////////////////////////
+    if (cli->exit_ == true) {
+        server_->DeleteClient(cli);//close the client
+        return 0;     
+    }
+    ////////////////////////
+
     if (cli->done_ == false) {
         cli->ProcessCmd();
     }

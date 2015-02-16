@@ -29,7 +29,7 @@ public:
         cmd_(-1),
         first_to_slave_(false),
         done_(false),
-        i(0),
+        exit_(false),
         client_flag_(-1){}
 
     ~Client() { 
@@ -64,6 +64,7 @@ public:
     char *big_recv_;
     
     bool done_;
+    bool exit_;
 
 private:
     //ok: return 0
@@ -117,7 +118,6 @@ private:
     
     bool first_to_slave_;
 
-    int i;
 };
 
 

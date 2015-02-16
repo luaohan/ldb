@@ -35,9 +35,12 @@ public:
     
     static void ClientReadWriteCB(int fd, short what, void *arg);
     static void SlaveReadWriteCB(int fd, short what, void *arg);
+    
+    bool SlaveIsWrinting();
+
+    void DeleteClient(Client *c);
 
 private:
-    void DeleteClient(Client *c);
     void DeleteClient(int fd);
     void AddClient(Client *cli);
 
