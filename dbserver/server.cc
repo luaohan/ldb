@@ -130,20 +130,6 @@ int Server::Run()
         return -1;
     }
     
-    socket_ = new Acceptor;
-    if (socket_ == NULL) {
-        fprintf(stderr, "new Acceptor error\n");
-        return -1;
-    }
-    
-    int backlog = 512;
-    socket_->SetReuseAddr();
-    if (socket_->Listen(config_.server_ip_.c_str(), config_.server_port_, backlog) < 0) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        return -1;
-    }
-    socket_->SetNonBlock();
-    
     if (config_.master_server_) 
     {
         std::vector<ConfigSlave> slaves = config_.slaves_;
@@ -158,6 +144,20 @@ int Server::Run()
             slaves_.push_back(slave);
         }
     } 
+    
+    socket_ = new Acceptor;
+    if (socket_ == NULL) {
+        fprintf(stderr, "new Acceptor error\n");
+        return -1;
+    }
+    
+    int backlog = 512;
+    socket_->SetReuseAddr();
+    if (socket_->Listen(config_.server_ip_.c_str(), config_.server_port_, backlog) < 0) {
+        fprintf(stderr, "%s\n", strerror(errno));
+        return -1;
+    }
+    socket_->SetNonBlock();
     
     base_ = event_base_new();
     struct event *e = event_new(base_, socket_->fd(),
@@ -312,7 +312,6 @@ void Server::SlaveReadCB(int fd, short what, void *arg)
     return ;
 }
     
-
 void Server::ConnectSlaveCB(int fd, short what, void *arg)
 {
     Slave *slave = (Slave *)arg;
