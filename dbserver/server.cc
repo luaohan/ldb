@@ -14,7 +14,6 @@
 #include <time.h>
 
 #include <net/acceptor.h>
-//#include <util/daemon.h>
 #include <util/log.h>
 
 #include <dbserver/server.h>
@@ -150,8 +149,10 @@ int Server::Run()
         std::vector<ConfigSlave> slaves = config_.slaves_;
         std::vector<ConfigSlave>::iterator i = slaves.begin();
         for (; i != slaves.end(); i++) {
+           
             std::string ip = (*i).ip_;
             int port = (*i).port_;
+        
             Socket *socket = new Socket(ip.c_str(), port);
             Slave *slave = new Slave(socket, this);
             slaves_.push_back(slave);
@@ -201,13 +202,19 @@ void Server::ConnectSlave()
                 fprintf(stderr, "error connect %s:%d \n", slave->link_->ip(), slave->link_->port());
             }
             //没有连接成功，加一个时间事件，1 S 发一次连接
+#if 0
             struct event *e = 
                 event_new(slave->server_->base_, -1, EV_PERSIST, Server::ConnectSlaveCB, slave);
+#endif
+            struct event *e = 
+                event_new(base_, -1, EV_PERSIST, Server::ConnectSlaveCB, slave);
+            
             struct timeval t = {3, 0};
             event_add(e, &t);
             slave->set_time_event(e);
     
-            slave->server_->no_conn_slave_nums_++;
+            //slave->server_->no_conn_slave_nums_++;
+            no_conn_slave_nums_++;
             
             continue;
         }
@@ -217,22 +224,29 @@ void Server::ConnectSlave()
         
         //连接成功，添加读事件
         int fd = slave->link_->fd();
+#if 0
         struct event *e = event_new(slave->server_->base_, fd, EV_READ | EV_PERSIST,
+                Server::SlaveReadCB, slave);
+#endif
+        struct event *e = event_new(base_, fd, EV_READ | EV_PERSIST,
                 Server::SlaveReadCB, slave);
         event_add(e, NULL);
         slave->link_->set_event(e);
     }
-    
+#if 0 
     i = slaves_.begin();
     if ((*i)->server_->no_conn_slave_nums_ == 0) {
         (*i)->server_->server_can_write_ = true;
+    }
+#endif
+    if (no_conn_slave_nums_ == 0) {
+        server_can_write_ = true;
     }
 
 }
 
 void Server::ListenCB(int fd, short what, void *arg)
 {
-
     Server *server = (Server *)arg;
     Socket *link = server->socket_->Accept();
     if (link == NULL) {
