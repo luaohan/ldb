@@ -9,50 +9,44 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <event2/event.h>
+#include <string>
 
 class Socket;
 
 class Acceptor {
+public:
+    typedef void (*Handler)(void *data);
 
-    public:
-        Acceptor();
-        ~Acceptor();
+    Acceptor(struct event_base *base, Handler handler, void *data)
+        : base_(base), handler_(handler), data_(data) {}
+    ~Acceptor() { Close(); }
 
-        //ok: return 0
-        //error: return -1
-        int Listen(const char *ip, int port, int backlog);
-       
-        //error: return NULL
-        Socket *Accept();
-        
-        void Close();
+    int Listen(const std::string &ip, int port);
+    AsyncSocket *Accept();
+    void Close();
 
-        int backlog() const;
-        int fd() const;
-        int port() const;
-       
-        bool IsNoblocked() const;
-       
-        int SetNonBlock();
-        //if uses these, call before Listen()
-        void SetReuseAddr();
+    int fd() const { return fd_; }
+    const std::string &ip() { return ip_; }
+    int port() const { return port_; }
 
-        struct event *event() const;
-        void set_event(struct event *e);
-    
-    private:
-        int fd_;
-        char ip_[INET_ADDRSTRLEN];
-        int port_;
-        int backlog_;
-        bool is_noblocked_;
-        
-        struct event *event_;
-        
-    private:
-        //No copying allowed
-        Acceptor(const Acceptor &);
-        void operator=(const Acceptor &);
+private:
+    Acceptor(const Acceptor &);
+    void operator=(const Acceptor &);
+
+    bool SetNonBlock();
+    bool SetReuseAddr();
+
+    static void Notify(int fd, short what, void *data);
+
+private:
+    struct event_base *base_;
+    struct event *event_;
+
+    int fd_;
+    std::string ip_;
+    int port_;
+    void *data_;
+    Handler handler_;
 };
 
 #endif

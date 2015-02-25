@@ -6,14 +6,10 @@
 
 #include <string>
 #include <iostream>
-#include <vector>
+#include <map>
 
 #include <leveldb/db.h>
-#include <leveldb/slice.h>
 #include <event2/event.h>
-
-#include <net/socket.h>
-#include <util/config.h>
 
 class Client;
 class Acceptor;
@@ -21,12 +17,12 @@ class Slave;
 
 class Server {
 public:
-    Server(Config &config);
+    Server();
     ~Server();
 
-    int Insert(const leveldb::Slice& key, const leveldb::Slice& value);
-    int Get(const leveldb::Slice& key, std::string* value);
-    int Delete(const leveldb::Slice& key);
+    int Insert(const std::string &key, const std::string &value);
+    int Get(const std::string &key, std::string* value);
+    int Delete(const std::string &key);
 
     int Run();
     void Stop();
@@ -40,16 +36,23 @@ public:
 
     void DeleteClient(Client *c);
 
+    struct event_base *base() const {return base_; }
+
 private:
     void DeleteClient(int fd);
     void AddClient(Client *cli);
 
     void ConnectSlave();
+    bool StartListen();
 
-    static void ListenCB(int fd, short what, void *arg);
+    static void ListenNotify(int fd, short what, void *arg);
     static void ClientReadCB(int fd, short what, void *arg);
     static void SlaveReadCB(int fd, short what, void *arg);
     static void ConnectSlaveCB(int fd, short what, void *arg);
+
+    void AddSlaveOp();
+    void DelSlaveOp();
+    void CheckListen();
 
 private:
     leveldb::Options options_;
@@ -57,18 +60,11 @@ private:
     leveldb::ReadOptions read_options_;
     leveldb::DB *db_;
     
-    std::vector<Client *> clients_;
-
+    std::map<int, Client *> clients_;
     int no_conn_slave_nums_;
-    
-public:
     struct event_base *base_;
-
-    Acceptor *socket_;
+    Acceptor *acceptor_;
     std::vector<Slave *> slaves_;
-
-    Config config_;
-
     bool server_can_write_;
 };
 

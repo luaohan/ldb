@@ -4,20 +4,18 @@
 #ifndef _LDB_CLIENT_H_
 #define _LDB_CLIENT_H_
 
-#include <stdio.h>
 #include <vector>
 #include <util/protocol.h>
-#include <net/socket.h>
+#include <net/async_socket.h>
 
 class Server;
-class Slave;
+class Socket;
 
 class Client {
 public:
-    Client(Server *server, Socket *link, std::vector<Slave *> slaves): 
-        server_(server),
-        link_(link),
-        slaves_(slaves),
+    Client(Server *server, AsyncSocket *sock)
+        : server_(server),
+        sock_(sock),
         data_pos_(0), 
         write_pos_(0), 
         data_one_(false), 
@@ -30,11 +28,15 @@ public:
         first_to_slave_(false),
         done_(false),
         exit_(false),
-        client_flag_(-1){}
+        client_flag_(-1)
+    {
+        sock_->SetHandler(Client::Notify, this);
+        sock_->Start();
+    }
 
     ~Client() { 
-        if (link_ != NULL) {
-            delete link_;
+        if (sock_ != NULL) {
+            delete sock_;
         }
 
         if (big_recv_ != NULL) {
@@ -45,26 +47,16 @@ public:
             delete big_value_;
         }
     }
-
-    int fd() const {
-        return link_->fd();
-    }
     
     int Read();
     int Write();
         
     int ProcessCmd();
 
-public:
-    Server *server_;
-    Socket *link_;
-    int body_len_;      //包体的长度
-    char head_to_slave_[HEAD_LEN];
-    char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
-    char *big_recv_;
-    
-    bool done_;
-    bool exit_;
+private:
+    static void Notify(int event, void *data);
+    void OnRead();
+    void OnWrite();
 
 private:
     //ok: return 0
@@ -89,35 +81,32 @@ private:
     void AddWriteEvent();
 
 private:
-
-    std::vector<Slave *> slaves_;
+    Server *server_;
+    AsyncSocket *sock_;
+    int body_len_;      //包体的长度
+    char head_to_slave_[HEAD_LEN];
+    char recv_[MAX_PACKET_LEN];    //接收缓冲区,足够放下一个数据包
+    char *big_recv_;
+    
+    bool done_;
+    bool exit_;
 
     char key_[MAX_KEY_LEN];
     char val_[MAX_VAL_LEN];
-
     int data_pos_;       //如果服务器实际读到的字节小于需要的字节数，
     //本字段用于记录实际读到的字节，
     //下次读取将从这里开始
-
     int write_pos_;     //如果服务器实际写的字节小于需要写的字节数，
     //本字段用于记录实际已经写的字节，
     //下次写时将从这里开始
-
     bool data_one_;     //数据包头是否读够
-
     int key_len_;       //key 的长度
-
     int replay_len_;
     char replay_[MAX_PACKET_LEN];  //回复缓冲区
-
     char *big_value_;
-
     int cmd_;
-    
     short client_flag_; 
-    
     bool first_to_slave_;
-
 };
 
 

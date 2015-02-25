@@ -8,149 +8,131 @@
 #include <errno.h>
 
 #include "acceptor.h"
-#include "socket.h"
+#include "async_socket.h"
 
-Acceptor::Acceptor():
-    fd_(-1), port_(-1), backlog_(-1), is_noblocked_(false), event_(NULL)
+void Acceptor::Notify(int fd, short what, void *data)
 {
-    ip_[0] = '\0';
-
-    fd_ = socket( AF_INET, SOCK_STREAM, 0 );
-
-    assert(fd_ != -1);
-}
-
-Acceptor::~Acceptor()
-{
-    if (event_ != NULL) {
-        event_free(event_);
-    }
-    
-    if ( fd_ > 0 ) {
-        close(fd_);
-        fd_ = -1;
+    if (what & EV_READ) {
+        Acceptor *acceptor = (Acceptor *)data;
+        acceptor->handler_(acceptor->data_);
     }
 }
 
-int Acceptor::fd() const
-{
-    return fd_;
-}
-
-int Acceptor::backlog() const
-{
-    return backlog_;
-}
-
-int Acceptor::port() const
-{
-    return port_;
-}
-
-int Acceptor::SetNonBlock()
+bool Acceptor::SetNonBlock()
 {
     int flags;
     if ((flags = fcntl(fd_, F_GETFL, NULL)) < 0) {
-        return -1;
+        return false;
     }
-   
+
     if (fcntl(fd_, F_SETFL, flags | O_NONBLOCK) == -1) {
+        return false;
+    }
+
+    return true;
+}
+
+int Acceptor::Listen(const std::string &ip, int port)
+{
+    assert(!ip.empty());
+
+    int rc = 0;
+    fd_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd_ == -1) {
         return -1;
     }
-   
-    is_noblocked_ = true;
-   
-    return 0;
-}
 
-bool Acceptor::IsNoblocked() const
-{
-    return is_noblocked_;
-}
-
-int Acceptor::Listen(const char *ip, int port, int backlog)
-{
-    assert(backlog > 0);
-    assert(ip != NULL);
-    backlog_ = backlog;
     struct sockaddr_in addr;
-  
     addr.sin_family = AF_INET;
-    if (strcmp(ip, "0.0.0.0") == 0) {
-        addr.sin_addr.s_addr = INADDR_ANY; //htonl(INADDR_ANY);
+    if (ip == "0.0.0.0") {
+        addr.sin_addr.s_addr = INADDR_ANY;
     } else {
-        addr.sin_addr.s_addr = inet_addr( ip );
+        addr.sin_addr.s_addr = inet_addr(ip.c_str());
+    }
+    addr.sin_port = htons(port);
+
+    if (!SetNonBlock()) {
+        goto ErrReturn;
     }
 
-    addr.sin_port = htons( port );
-    if (bind(fd_, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) == -1 ) {
-        close( fd_);
-        fd_ = -1;
-        return -1;
+    if (!SetReuseAddr()) {
+        goto ErrReturn;
     }
-   
-    if (listen(fd_, backlog_) == -1 ) {
+
+    rc = bind(fd_, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
+    if (rc == -1 ) {
+        goto ErrReturn;
+    }
+
+    if (listen(fd_, 500) == -1 ) {
+        goto ErrReturn;
+    }
+
+    event_ = event_new(base_, fd_, 
+                EV_READ | EV_PERSIST, Notify, this);
+    assert(event_ != NULL);
+    event_add(event_, NULL);
+
+    ip_ = ip;
+    port_ = port;
+
+    return 0;
+
+ErrReturn:
+    if (fd_ != -1) {
         close(fd_);
         fd_ = -1;
-        return -1;
     }
-   
-    strcpy(ip_, ip);
-    port_ = port;
-  
-    return 0;
+
+    return -1;
 }
 
 void Acceptor::Close()
 {
-    if (fd_ > 0) {
+    if ( fd_ > 0 ) {
+        if (event_ != NULL) {
+            event_free(event_);
+            event_ = NULL;
+        }
+
         close(fd_);
         fd_ = -1;
     }
 }
 
-Socket *Acceptor::Accept()
+AsyncSocket *Acceptor::Accept()
 {
-    int fd = -1;
     struct sockaddr_in remote;
-    int len = 0;
 
 ReAccept:
-    len = sizeof( struct sockaddr_in );
-    fd = accept(fd_, (struct sockaddr *)&remote, (socklen_t *)&len);
+    int len = sizeof( struct sockaddr_in );
+    int fd = accept(fd_, (struct sockaddr *)&remote, (socklen_t *)&len);
     if (fd == -1) {
-        int err = errno;
-        if ( err == EINTR ) {
+        if (errno == EINTR) {
             goto ReAccept;
         }
-        
-        return NULL;
-    }
-   
-    Socket *socket = new Socket;
-    if (socket == NULL) {
+
         return NULL;
     }
 
-    socket->set_fd(fd);
-    socket->set_port(ntohs(remote.sin_port));
-    strcpy( socket->ip(), inet_ntoa(remote.sin_addr));
-   
-    return socket;
+    AsyncSocket *s = new AsyncSocket(base_, fd, 
+            inet_ntoa(remote.sin_addr), 
+            ntohs(remote.sin_port));
+    assert(s != NULL);
+
+    s->SetNoNagle();
+    s->SetNonBlock();
+
+    return s;
 }
 
-void Acceptor::SetReuseAddr()
+bool Acceptor::SetReuseAddr()
 {
     int on = 1;
-    setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
-}
+    int rc = setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
+    if (rc == -1) {
+        return false;
+    }
 
-struct event* Acceptor::event() const
-{
-    return event_;
-}
-
-void Acceptor::set_event(struct event *e)
-{
-    event_ = e;
+    return true;
 }

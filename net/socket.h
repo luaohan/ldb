@@ -4,80 +4,41 @@
 #ifndef _SOCKET_H_
 #define _SOCKET_H_
 
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <event2/event.h>
+#include <string>
 
 class Socket {
+public:
+    Socket(const std::string &ip, int port) 
+        : fd_(-1), 
+        ip_(ip),
+        port_(-1) {}
+    Socket(int fd, const std::string &ip, int port) 
+        : fd_(fd), ip_(ip), port_(port) {}
+    virtual ~Socket() {}
 
-    public:
-        Socket();
-        Socket(const char *ip, int port);
-        ~Socket();
-
-        void Close();
-        //ok: return 0
-        //error: return -1
-        int Connect(const char *ip, int port);
-        int Connect();
-        
-        int fd() const;
-        int port() const;
-        char *ip(); 
-
-        void set_fd(int fd) {
-            fd_ = fd;
-        }
-        
-        void set_port(int port) {
-            port_ = port;
-        }
-
-        bool IsNoblocked() const;
+    virtual int Connect() = 0;
+    virtual int Read(char *buffer, int len) = 0;
+    virtual int Write(char *buffer, int len) = 0;
+    virtual void Close() = 0;
     
-        //if uses these, call before Connect()
-        int SetNonBlock();
-        void SetReuseAddr(); 
-        void SetLinger();
-        void SetNoNagle();
-        void SetRcvBuf(int size);
-        void SetSndBuf(int size);
+    int fd() const { return fd_; }
+    int port() const { return port_; }
+    const std::string &ip() { return ip_; }
 
-        //just like read() and write()
-        //ok: return the size of read
-        //a client exit: return 0
-        //调用者需要判断 EAGAIN
-        
-        int ReadData(char *buffer, int size);
-        int WriteData(char *buffer, int size);
+    bool SetReuseAddr(); 
+    bool SetNoNagle();
+    bool SetRcvBuf(int len);
+    bool SetSndBuf(int len);
 
-        //ok: 返回读到的字节数
-        //error: return -1
-        //对方断开: return 0
-        int BlockRead(char *buffer, int size);
+private:
+    Socket(const Socket &);
+    void operator=(const Socket &);
 
-        //ok: return size
-        //error: return -1;
-        int BlockWrite(char *buffer, int size);
-
-        struct event* event() const;
-        void set_event(struct event *e);
-
-    private:
-        int fd_;
-        char ip_[INET_ADDRSTRLEN];
-        int port_;
-        bool is_noblocked_;
-
-        struct event *event_;
-
-    private:
-        //No copying allowed
-        Socket(const Socket &);
-        void operator=(const Socket &);
+protected:
+    int fd_;
+    std::string ip_;
+    int port_;
 };
 
-
 #endif
+

@@ -1,34 +1,64 @@
 // client.cc (2015-01-09)
 // WangPeng (1245268612@qq.com)
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
 
-#include <leveldb/slice.h>
-
 #include <util/protocol.h>
 #include <util/log.h>
+
 #include <dbserver/client.h>
 #include <dbserver/server.h>
 #include <dbserver/slave.h>
 
+void Client::Notify(int event, void *data)
+{
+    assert(data != NULL);
+    Client *c = (Client *)data;
+
+    switch (event) {
+        case AsyncSocket::kRead:
+            c->OnRead();
+            break;
+        case AsyncSocket::kWrite:
+            c->OnWrite();
+            break;
+        //case AsyncSocket::kConnected:
+        //    c->OnConnect();
+        //    break;
+        //case AsyncSocket::kTimeout:
+        //    c->OnTimeout();
+        //    break;
+    }
+}
+
+void Client::OnRead()
+{
+    Read();
+}
+
+void Client::OnWrite()
+{
+    //Write();
+}
+
+
 int Client::ReadHead()
 {
-    int ret = link_->ReadData(recv_ + data_pos_, HEAD_LEN - data_pos_);
+    int ret = sock_->Read(recv_ + data_pos_, HEAD_LEN - data_pos_);
     if (ret < HEAD_LEN - data_pos_) {  
         if (ret == 0) {
             log_info("a clent exit, fd[%d], port[%d], ip[%s]",
-                    link_->fd(), link_->port(), link_->ip());
+                    sock_->fd(), sock_->port(), sock_->ip().c_str());
             return 1;
         }
 
         if (ret < 0) {
             if (errno != EAGAIN) {
                 log_error("read data error, fd[%d], port[%d], ip[%s]",
-                        link_->fd(), link_->port(), link_->ip());
+                        sock_->fd(), sock_->port(), sock_->ip().c_str());
                 return -1;
             }
 
@@ -47,13 +77,14 @@ int Client::ReadHead()
     if (packet_type != SET_CMD && packet_type != GET_CMD && packet_type != DEL_CMD) {
         //error cmd
         log_error("error cmd, fd[%d], port[%d], ip[%s]",
-                link_->fd(), link_->port(), link_->ip());
+                sock_->fd(), sock_->port(), sock_->ip().c_str());
         return -1;
     }
 
     cmd_ = packet_type;
     
-    if (server_->config_.master_server_ && server_->server_can_write_ 
+    if (config_.master_server_ 
+            && server_->server_can_write_ 
             && packet_type != GET_CMD) {
 
         first_to_slave_ = true;
@@ -77,18 +108,18 @@ int Client::ReadBody(/*Slave *slave*/)
 {
     if (body_len_ <= ONE_M) {
 
-        int ret = link_->ReadData(recv_ + data_pos_, body_len_ - data_pos_);
+        int ret = sock_->Read(recv_ + data_pos_, body_len_ - data_pos_);
         if (ret < body_len_ - data_pos_) {
             if (ret == 0) {
                 log_info("a clent exit, fd[%d], port[%d], ip[%s]",
-                        link_->fd(), link_->port(), link_->ip());
+                        sock_->fd(), sock_->port(), sock_->ip().c_str());
                 return 1;
             }
 
             if (ret < 0) {
                 if (errno != EAGAIN) {
                     log_error("read data error, fd[%d], port[%d], ip[%s]",
-                            link_->fd(), link_->port(), link_->ip());
+                            sock_->fd(), sock_->port(), sock_->ip().c_str());
                     return -1;
                 }
 
@@ -136,18 +167,18 @@ int Client::ReadBody(/*Slave *slave*/)
         }
     }
 
-    int ret = link_->ReadData(big_recv_ + data_pos_, body_len_ - data_pos_);
+    int ret = sock_->Read(big_recv_ + data_pos_, body_len_ - data_pos_);
     if (ret < body_len_ - data_pos_) {
         if (ret == 0) {
             log_info("a clent exit, fd[%d], port[%d], ip[%s]",
-                    link_->fd(), link_->port(), link_->ip());
+                    sock_->fd(), sock_->port(), sock_->ip().c_str());
             return 1;
         }
 
         if (ret < 0) {
             if (errno != EAGAIN) {
                 log_error("read data error, fd[%d], port[%d], ip[%s]",
-                        link_->fd(), link_->port(), link_->ip());
+                        sock_->fd(), sock_->port(), sock_->ip().c_str());
                 return -1;
             }
 
@@ -203,22 +234,22 @@ int Client::WritePacket()
 {
     int ret;
     if (big_value_ == NULL) {
-        ret = link_->WriteData(replay_ + write_pos_, replay_len_ - write_pos_);
+        ret = sock_->Write(replay_ + write_pos_, replay_len_ - write_pos_);
     } else {
-        ret = link_->WriteData(big_value_ + write_pos_, replay_len_ - write_pos_);
+        ret = sock_->Write(big_value_ + write_pos_, replay_len_ - write_pos_);
     }
     
     if (ret < replay_len_ - write_pos_) {  
         if (ret == 0) {
             log_error("write error, fd[%d], port[%d], ip[%s]",
-                    link_->fd(), link_->port(), link_->ip());
+                    sock_->fd(), sock_->port(), sock_->ip().c_str());
             return -1;
         }
 
         if (ret < 0) {
             if (ret != EAGAIN) {
                 log_error("read data error, fd[%d], port[%d], ip[%s]",
-                        link_->fd(), link_->port(), link_->ip());
+                        sock_->fd(), sock_->port(), sock_->ip().c_str());
                 return -1;
             }
 
@@ -248,25 +279,20 @@ int Client::SetCommand()
 
     int ret;
     if (server_->server_can_write_) {
-
-        leveldb::Slice key(key_, key_len_);
         int value_len = body_len_ - key_len_ - sizeof(short);
         if (server_->config_.master_server_ == false) { 
             value_len -= sizeof(short);
         }
 
         if (big_value_ == NULL) {
-
-            leveldb::Slice val(val_, value_len);
-            ret = server_->Insert(key, val);
+            ret = server_->Insert(std::string(key_, key_len_), std::string(val_, value_len));
             if (ret == -1) {
                 //fatal error
                 log_fatal("insert error");
                 return -1;
             }   
         } else {
-            leveldb::Slice val(big_value_, value_len);
-            ret = server_->Insert(key, val);
+            ret = server_->Insert(std::string(key_, key_len_), std::string(big_value_, value_len));
             if (ret == -1) {
                 //fatal error
                 log_fatal("insert error");
@@ -309,10 +335,8 @@ int Client::SetCommand()
 
 int Client::GetCommand()
 {
-    leveldb::Slice key(key_, key_len_);
-
     std::string val;
-    int ret = server_->Get(key, &val);
+    int ret = server_->Get(std::string(key_, key_len_), &val);
     if (ret < 0) {
         //key not exist 
         ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_NO_THE_KEY);
@@ -361,8 +385,7 @@ int Client::DelCommand()
     
     int ret;
     if (server_->server_can_write_) {
-        leveldb::Slice key(key_, key_len_);
-        server_->Delete(key);
+        server_->Delete(std::string(key_, key_len_));
 
         ret = FillPacket(replay_, MAX_PACKET_LEN, NULL, 0, NULL, 0, REPLAY_OK);
         if (server_->config_.master_server_ == false) {
@@ -461,12 +484,12 @@ void Client::WriteToSlave()
         slave->clients_.push_back(this);
         int ret = slave->Write();
         if (ret == 2) { //没写完, 将写事件加入libevent
-            event_free(slave->link_->event());
+            event_free(slave->sock_->event());
 
-            struct event *e = event_new(server_->base_, slave->link_->fd(),
+            struct event *e = event_new(server_->base_, slave->sock_->fd(),
                     EV_READ | EV_WRITE | EV_PERSIST, Server::SlaveReadWriteCB, slave);
             event_add(e, NULL);
-            slave->link_->set_event(e);
+            slave->sock_->set_event(e);
         }
     }
 
@@ -476,9 +499,9 @@ void Client::AddWriteEvent()
 {
     //因为里边本来有读事件
     //所以这里先释放读事件，再添加读写事件
-    event_free(link_->event());
-    struct event *e = event_new(server_->base_, link_->fd(),
+    event_free(sock_->event());
+    struct event *e = event_new(server_->base_, sock_->fd(),
             EV_READ | EV_WRITE | EV_PERSIST, Server::ClientReadWriteCB, this);
     event_add(e, NULL);
-    link_->set_event(e);
+    sock_->set_event(e);
 }

@@ -8,34 +8,35 @@
 #include <stdarg.h>
 
 class Log {
-    public:
-        Log(std::string logfile_path, int level, int rotate_size = 1024 * 1024 * 10);
-        ~Log();
-   
-        int LogWrite(int level, const char *fmt, ...);
-        void Close();
-        int fd() const {return fd_;}
+public:
+    Log(std::string logfile_path, int level, int rotate_size = 1024 * 1024 * 10);
+    ~Log();
 
-    public:
-        static const int LEVEL_FATAL = 0;
-        static const int LEVEL_ERROR = 1;
-        static const int LEVEL_WARN = 2;
-        static const int LEVEL_INFO = 3;
-        static const int LEVEL_DEBUG = 4;
-   
-    private:
-        int Write(int level, const char *fmt, va_list ap);
-        int Rotate();
-        const char *LevelString(int level);
+    int LogWrite(int level, const char *fmt, ...);
+    void Close();
 
-        void Mkdir(const char *str);
+public:
+    enum {
+        LEVEL_FATAL = 0,
+        LEVEL_ERROR,
+        LEVEL_WARN,
+        LEVEL_INFO,
+        LEVEL_DEBUG
+    };
 
-    private:
-        int fd_;
-        std::string logfile_path_;
-        int level_;
-        int current_size_;
-        int rotate_size_ ;
+private:
+    int Write(int level, const char *fmt, va_list ap);
+    int Rotate();
+    const char *LevelString(int level);
+
+    void Mkdir(const char *str);
+
+private:
+    int fd_;
+    std::string logfile_path_;
+    int level_;
+    int current_size_;
+    int rotate_size_ ;
 };
 
 extern Log *log;
@@ -57,3 +58,4 @@ extern Log *log;
 
 
 #endif
+

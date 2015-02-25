@@ -13,57 +13,60 @@ class Client;
 class Socket;
 
 class Slave {
-    public:
-        Slave(Socket *link, Server *server):
-            link_(link),
-            server_(server),
-            data_pos_(0),
-            write_pos_(0),
-            data_one_(false),
-            data_two_(false),
-            flag_(false),
-            writing_(false),
-            time_event_(NULL)
-            {}
+public:
+    Slave(Server *server, const std::string &ip, int port)
+        : server_(server),
+        ip_(ip),
+        port_(port),
+        connecting_(false),
+        sock_(NULL),
+        data_pos_(0),
+        write_pos_(0),
+        data_one_(false),
+        data_two_(false),
+        flag_(false),
+        writing_(false),
+        time_event_(NULL)
+        {}
 
-        ~Slave() {
-            if (link_ != NULL) {
-                delete link_;
-            }
-            
-            if (time_event_ != NULL) {
-                event_free(time_event_);
-            }
+    ~Slave() {
+        if (sock_ != NULL) {
+            delete sock_;
         }
+        
+        if (time_event_ != NULL) {
+            event_free(time_event_);
+        }
+    }
 
-        //ok, return 0
-        //error, return -1
-        //没写完,return 2
-        int Read();
-        int Write();
+    //ok, return 0
+    //error, return -1
+    //没写完,return 2
+    int Read();
+    int Write();
 
-        std::vector<Client *> clients_;
-        Socket *link_;
-        Server *server_;
-        bool writing_;
+private:
+    static void Notify(int event, void *data);
+    void OnNotify(int event);
 
-        struct event* time_event() const;
-        void set_time_event(struct event *e);
+private:
+    Server *server_;
+    std::string ip_;
+    int port_;
+    bool connecting_;
 
-    private:
+    Socket *sock_;
+    bool writing_;
+    int data_pos_;
+    int write_pos_;
+    bool data_one_;
+    bool data_two_;
+    char recv_[PACKET_LEN_SLAVE_REPLAY];
+    char client_flag_[sizeof(short)];
+    bool flag_;
 
-        int data_pos_;
-        int write_pos_;
-        bool data_one_;
-        bool data_two_;
-        char recv_[PACKET_LEN_SLAVE_REPLAY];
-        char client_flag_[sizeof(short)];
-        bool flag_;
-
-        struct event *time_event_;
+    struct event *time_event_;
 };
 
-
-
-
 #endif
+

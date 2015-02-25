@@ -10,12 +10,51 @@
 #include <dbserver/slave.h>
 #include <util/log.h>
 
+void Slave::Notify(int event, void *data)
+{
+    assert(data != NULL);
+
+    Slave *s = (Slave *)data;
+    s->OnNotify(event);
+}
+
+void Slave::OnNotify(int event)
+{
+    switch (event) {
+        cast AsyncSocket::kRead:
+            OnRead();
+            break;
+        cast AsyncSocket::kWrite:
+            OnWrite();
+            break;
+        cast AsyncSocket::kConnected:
+            OnConnect();
+            break;
+        cast AsyncSocket::kTimeout:
+            OnTimeout();
+            break;
+    }
+}
+
+void Slave::OnConnect()
+{
+    server_->DelSlaveOp();
+}
+
+int Slave::Connect()
+{
+    AsyncSocket *sock = new AsyncSocket(server_->base(), ip.c_str(), port, 
+            Slave::Notify, this);
+
+    return sock->Connect();
+}
+
 int Slave::Read()
 {
     int len = PACKET_LEN_SLAVE_REPLAY - data_pos_; //8个字节
     char *buf = recv_ + data_pos_;
 
-    int ret = link_->ReadData(buf, len);
+    int ret = sock_->ReadData(buf, len);
     if (ret < len) {
         //这里ret == 0 也视为错误，因为server 与 slave 不允许断开
         if (ret == 0) {
@@ -72,8 +111,8 @@ int Slave::Write()
         //向slave 写包头
         char *buf = cli->head_to_slave_ + write_pos_;
         int len = HEAD_LEN - write_pos_;
-        ret = link_->WriteData(buf, len);
-        if (ret < len) {
+        ret = sock_->Write(buf, len);
+        if (ret != len) {
             if (ret == 0) {
                 log_error("slave error: %s\n", strerror(errno));
                 exit(0);//return -1;
@@ -107,7 +146,7 @@ int Slave::Write()
             buf = cli->big_recv_ + write_pos_; 
         }
 
-        ret = link_->WriteData(buf, len);
+        ret = sock_->WriteData(buf, len);
         if (ret < len) {
             if (ret == 0) {
                 log_error("slave error: %s\n", strerror(errno));
@@ -134,14 +173,14 @@ int Slave::Write()
    
     //向slave 写client的标示,这里用client 的fd 作为唯一标识
     if (flag_ == false) {
-        short fd = htons(cli->link_->fd());
+        short fd = htons(cli->sock_->fd());
         memcpy(client_flag_, (char *)&fd, sizeof(short));
         flag_ = true;
     }
     
     char *buf = client_flag_ + write_pos_;
     int len = sizeof(short) - write_pos_;
-    ret = link_->WriteData(buf, len);
+    ret = sock_->WriteData(buf, len);
     if (ret < len) {
         if (ret == 0) {
             log_error("slave error: %s\n", strerror(errno));
@@ -174,19 +213,3 @@ int Slave::Write()
     return 0;
 }
 
-struct event* Slave::time_event() const 
-{
-    return time_event_;
-}
-
-void Slave::set_time_event(struct event *e)
-{
-    time_event_ = e;
-}
-
-#if 0
-void Slave::ConnectSlave()
-{
-
-}
-#endif
